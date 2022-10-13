@@ -28,7 +28,7 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
     CountersUpgradeable.Counter private _tokenIdTracker;
 
     // Fee
-    uint256 constant public bFee = 10; // 1%
+    uint256 constant public bFee = 25; // 1%
     uint256 constant DIVISOR = 1000;
 
     // Token

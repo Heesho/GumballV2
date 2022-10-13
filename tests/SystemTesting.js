@@ -93,6 +93,427 @@ describe("System Testing", function () {
         console.log("******************************************************");
     });
 
+    it('User1 Buys GBT with 10 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).buy(ten, 1, 1682282187);
+
+    });
+
+    it('User1 converts 1 GBT to 1 gNFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GNFT.address, one);
+        await GNFT.connect(user1).swap(one);
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+
+    });
+
+    it('User1 stakes 1 gNFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user1.address, 0);
+        await GNFT.connect(user1).approve(XGBT.address, tokenID);
+        await XGBT.connect(user1).depositNFT([tokenID]);
+
+    });
+
+    it('User1 unstakes GBT', async function () {
+        console.log("******************************************************");
+
+        await expect(XGBT.connect(user1).withdrawToken(await XGBT.balanceOf(user1.address))).to.be.revertedWith("Insufficient balance");
+
+    });
+
+    it('User1 unstakes wrong NFT', async function () {
+        console.log("******************************************************");
+
+        await expect(XGBT.connect(user1).withdrawNFT([1])).to.be.revertedWith("!Found");
+
+    });
+
+    it('User2 Buys GBT with 10 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user2).approve(GBT.address, ten);
+        await GBT.connect(user2).buy(ten, 1, 1682282187);
+
+    });
+
+    it('User2 converts 1 GBT to 1 gNFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GNFT.address, one);
+        await GNFT.connect(user2).swap(one);
+
+    });
+
+    it('User2 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GBT.address, ten);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+
+    });
+
+    it('User2 stakes 1 gNFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user2.address, 0);
+        await GNFT.connect(user2).approve(XGBT.address, tokenID);
+        await XGBT.connect(user2).depositNFT([tokenID]);
+
+    });
+
+    it('User1 unstakes user2s NFT', async function () {
+        console.log("******************************************************");
+
+        await expect(XGBT.connect(user1).withdrawNFT([1])).to.be.revertedWith("!Found");
+
+    });
+
+    it('User1 unstakes NFT', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user1).withdrawNFT([0]);
+
+    });
+
+    it('User1 converts NFT to GBT', async function () {
+        console.log("******************************************************");
+
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user1.address, 0);
+        await GNFT.connect(user1).approve(GNFT.address, tokenID);
+        await GNFT.connect(user1).redeem([0]);
+
+    });
+
+    it('User2 borrows max against position', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).borrowMax();
+
+    });
+
+    it('User2 withdraws NFT', async function () {
+        console.log("******************************************************");
+
+        await expect(XGBT.connect(user2).withdrawToken(await XGBT.balanceOf(user2.address))).to.be.revertedWith("Insufficient balance");
+        await expect(XGBT.connect(user2).withdrawNFT([1])).to.be.revertedWith("Borrow debt");
+
+    });
+
+    it('User2 Buys GBT with 10 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user2).approve(GBT.address, ten);
+        await GBT.connect(user2).buy(ten, 1, 1682282187);
+
+    });
+
+    it('User2 stakes GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(XGBT.address, ten);
+        await XGBT.connect(user2).depositToken(await GBT.balanceOf(user2.address));
+
+    });
+
+    it('User2 unstakes NFT', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user2).withdrawNFT([1]);
+
+    });
+
+    it('User2 unstakes GBT', async function () {
+        console.log("******************************************************");
+
+        await expect(XGBT.connect(user2).withdrawToken(await XGBT.balanceOf(user2.address))).to.be.revertedWith("Borrow debt");
+        await XGBT.connect(user2).withdrawToken((await XGBT.balanceOf(user2.address)).sub(one));
+
+    });
+
+    it('User2 converts NFT to GBT', async function () {
+        console.log("******************************************************");
+
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user2.address, 0);
+        await GNFT.connect(user2).approve(GNFT.address, tokenID);
+        await GNFT.connect(user2).redeem([tokenID]);
+
+    });
+
+    it('User2 borrows max against position', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).borrowMax();
+
+    });
+
+    it('User2 calls treasury skim', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).treasurySkim();
+
+    });
+
+    it('Forward 7 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [7*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User2 claims rewards', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user2).getReward();
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User3 converts 10 GBT to NFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GNFT.address, ten);
+        await GNFT.connect(user3).swap(ten);
+
+    });
+
+    it('User3 stakes 5 NFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user3.address, 0);
+        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user3.address, 1);
+        let tokenID3 = await GNFT.tokenOfOwnerByIndex(user3.address, 2);
+        let tokenID4 = await GNFT.tokenOfOwnerByIndex(user3.address, 3);
+        let tokenID5 = await GNFT.tokenOfOwnerByIndex(user3.address, 4);
+        await GNFT.connect(user3).approve(XGBT.address, tokenID1);
+        await GNFT.connect(user3).approve(XGBT.address, tokenID2);
+        await GNFT.connect(user3).approve(XGBT.address, tokenID3);
+        await GNFT.connect(user3).approve(XGBT.address, tokenID4);
+        await GNFT.connect(user3).approve(XGBT.address, tokenID5);
+        await XGBT.connect(user3).depositNFT([tokenID1, tokenID2, tokenID3, tokenID4, tokenID5]);
+    });
+
+    it('User3 borrows some ETH against position', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).borrowSome(two);
+
+    });
+
+    it('User3 unstakes 3 NFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await XGBT.balanceNFT(user3.address, 0);
+        let tokenID2 = await XGBT.balanceNFT(user3.address, 1);
+        let tokenID3 = await XGBT.balanceNFT(user3.address, 2);
+        await XGBT.connect(user3).withdrawNFT([tokenID1, tokenID2, tokenID3]);
+
+    });
+
+    it('User3 redeems 8 NFT for GBT', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user3.address, 0);
+        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user3.address, 1);
+        let tokenID3 = await GNFT.tokenOfOwnerByIndex(user3.address, 2);
+        let tokenID4 = await GNFT.tokenOfOwnerByIndex(user3.address, 3);
+        let tokenID5 = await GNFT.tokenOfOwnerByIndex(user3.address, 4);
+        let tokenID6 = await GNFT.tokenOfOwnerByIndex(user3.address, 5);
+        let tokenID7 = await GNFT.tokenOfOwnerByIndex(user3.address, 6);
+        let tokenID8 = await GNFT.tokenOfOwnerByIndex(user3.address, 7);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID1);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID2);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID3);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID4);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID5);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID6);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID7);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID8);
+        await GNFT.connect(user3).redeem([tokenID1, tokenID2, tokenID3, tokenID4, tokenID5, tokenID6, tokenID7, tokenID8]);
+        
+    });
+
+    it('User2 and User3 borrows max against position', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).borrowMax();
+        await GBT.connect(user3).borrowMax();
+
+    });
+
+    it('User2 repays some eth back', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user2).approve(GBT.address, one);
+        await GBT.connect(user2).repaySome(one);
+
+    });
+
+    it('User2 unstakes max GBT', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user2).withdrawToken((await XGBT.balanceOf(user2.address)).sub(await GBT.mustStayGBT(user2.address)));
+
+    });
+
+    it('User2 repays max', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user2).approve(GBT.address, one);
+        await GBT.connect(user2).repayMax();
+
+    });
+
+    it('User2 unstakes all GBT', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user2).withdrawToken(await XGBT.balanceOf(user2.address));
+
+    });
+
+    it('User2 stakes 2 GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(XGBT.address, two);
+        await XGBT.connect(user2).depositToken(two);
+
+    });
+
+    it('User1 Buys GBT with 50 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(GBT.address, fifty);
+        await GBT.connect(user1).buy(fifty, 1, 1682282187);
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).sell((await GBT.balanceOf(user1.address)).sub(two), 1, 1682282187);
+
+    });
+
+    it('User1 calls treasury skim', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).treasurySkim();
+
+    });
+
+    it('Forward 3 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [3*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 stakes 2 GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(XGBT.address, two);
+        await XGBT.connect(user1).depositToken(two);
+
+    });
+
+    it('Forward 4 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [4*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('Users claim rewards', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user1).getReward();
+        await XGBT.connect(user2).getReward();
+        await XGBT.connect(user3).getReward();
+
+    });
+
+    it('Gumball Coverage Testing', async function () {
+        console.log("******************************************************");
+
+        await GNFT.bFee();
+        await GNFT.tokenContract();
+        await GNFT.tokenBal();
+        await GNFT.nftBal();
+        await GNFT.contractURI();
+        await GNFT.totalSupply();
+        await GNFT.currentPrice();
+        await GNFT.gumballs.length;
+
+    });
+
+    it('Gumbar Coverage Testing', async function () {
+        console.log("******************************************************");
+
+        await XGBT.stakingToken();
+        await XGBT.stakingNFT();
+        await XGBT.totalSupply();
+        await XGBT.balanceOf(user1.address);
+        await XGBT.lastTimeRewardApplicable(weth.address);
+        await XGBT.rewardPerToken(weth.address);
+
+        await XGBT.connect(protocol).setRewardsDistributor(weth.address, GBT.address);
+        await XGBT.connect(protocol).setRewardsDistributor(GBT.address, GBT.address);
+        await expect(XGBT.connect(protocol).recoverERC20(weth.address, one)).to.be.revertedWith("Cannot withdraw reward token");
+
+    });
+
+    it('Bonding Curve Coverage Testing', async function () {
+        console.log("******************************************************");
+
+        await GBT.BASE_TOKEN();
+        await GBT.reserveVirtualBASE();
+        await GBT.reserveRealBASE();
+        await GBT.reserveGBT();
+        await GBT.initial_totalSupply();
+        await GBT.treasuryBASE();
+        await GBT.treasuryGBT();
+        await GBT.gumball();
+        await GBT.gumbar();
+        await GBT.artist();
+        await GBT.protocol();
+        await GBT.factory();
+
+        await GBT.borrowedTotalBASE();
+        await GBT.currentPrice();
+
+        await GBT.borrowCredit(user1.address);
+        await GBT.skimReward();
+        await GBT.debt(user1.address);
+        await GBT.baseBal();
+        await GBT.gbtBal();
+        await GBT.getProtocol();
+        await GBT.getGumball();
+        await GBT.initSupply();
+
+    });
+
     it('System Status', async function () {
         console.log("******************************************************");
 
@@ -122,6 +543,8 @@ describe("System Testing", function () {
         let user1XGBT = await XGBT.balanceOf(user1.address);
         let user1EarnedGBT = await XGBT.earned(user1.address, GBT.address);
         let user1EarnedETH = await XGBT.earned(user1.address, weth.address);
+        let user1BorrowedETH = await GBT.borrowedBASE(user1.address);
+        let user1MustStayGBT = await GBT.mustStayGBT(user1.address);
 
         let user2ETH = await weth.balanceOf(user2.address);
         let user2GBT = await GBT.balanceOf(user2.address);
@@ -129,6 +552,8 @@ describe("System Testing", function () {
         let user2XGBT = await XGBT.balanceOf(user2.address);
         let user2EarnedGBT = await XGBT.earned(user2.address, GBT.address);
         let user2EarnedETH = await XGBT.earned(user2.address, weth.address);
+        let user2BorrowedETH = await GBT.borrowedBASE(user2.address);
+        let user2MustStayGBT = await GBT.mustStayGBT(user2.address);
 
         let user3ETH = await weth.balanceOf(user3.address);
         let user3GBT = await GBT.balanceOf(user3.address);
@@ -136,10 +561,14 @@ describe("System Testing", function () {
         let user3XGBT = await XGBT.balanceOf(user3.address);
         let user3EarnedGBT = await XGBT.earned(user3.address, GBT.address);
         let user3EarnedETH = await XGBT.earned(user3.address, weth.address);
+        let user3BorrowedETH = await GBT.borrowedBASE(user3.address);
+        let user3MustStayGBT = await GBT.mustStayGBT(user3.address);
 
         // Invariants
 
-        
+        // for each user: mustStayGBT <= staked balance 
+        // bonding curve balance ETH = rETH + bETH
+        // GBT staked = sum of users staked balances
 
         console.log("BONDING CURVE RESERVES");
         console.log("GBT Reserve", divDec(reserveGBT));
@@ -181,6 +610,8 @@ describe("System Testing", function () {
         console.log("Staked GBT", divDec(user1XGBT));
         console.log("Earned GBT", divDec(user1EarnedGBT));
         console.log("Earned ETH", divDec(user1EarnedETH));
+        console.log("Borrowed ETH", divDec(user1BorrowedETH));
+        console.log("Must Stay GBT", divDec(user1MustStayGBT));
         console.log();
 
         console.log("USER2 BALANCES");
@@ -190,6 +621,8 @@ describe("System Testing", function () {
         console.log("Staked GBT", divDec(user2XGBT));
         console.log("Earned GBT", divDec(user2EarnedGBT));
         console.log("Earned ETH", divDec(user2EarnedETH));
+        console.log("Borrowed ETH", divDec(user2BorrowedETH));
+        console.log("Must Stay GBT", divDec(user2MustStayGBT));
         console.log();
 
         console.log("USER3 BALANCES");
@@ -199,6 +632,8 @@ describe("System Testing", function () {
         console.log("Staked GBT", divDec(user3XGBT));
         console.log("Earned GBT", divDec(user3EarnedGBT));
         console.log("Earned ETH", divDec(user3EarnedETH));
+        console.log("Borrowed ETH", divDec(user3BorrowedETH));
+        console.log("Must Stay GBT", divDec(user3MustStayGBT));
         console.log();
 
     });
