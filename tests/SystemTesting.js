@@ -30,7 +30,7 @@ const startTime = Math.floor(Date.now() / 1000);
 
 // users
 let owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball;
-let weth, GBT, XGBT, GNFT;
+let weth, GBT, XGBT, GNFT, USDC;
 
 describe("System Testing", function () {
   
@@ -44,6 +44,7 @@ describe("System Testing", function () {
         // mints 1000 tokens to deployer
         const erc20Mock = await ethers.getContractFactory("ERC20Mock");
         weth = await erc20Mock.deploy("WETH", "WETH");
+        USDC = await erc20Mock.deploy("USDC", "USDC")
         await weth.mint(user1.address, oneThousand);
         await weth.mint(user2.address, oneThousand);
         await weth.mint(user3.address, oneThousand);
@@ -481,8 +482,118 @@ describe("System Testing", function () {
 
     });
 
-    
+    it('User1 calls treasury skim', async function () {
+        console.log("******************************************************");
 
+        await GBT.connect(user1).treasurySkim();
+
+    });
+
+    it('Forward 3 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [3*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 Buys GBT with 50 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).buy(ten, 1, 1682282187);
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+
+    });
+
+    it('User1 calls treasury skim', async function () {
+        console.log("******************************************************");
+
+        await expect(GBT.connect(user1).treasurySkim()).to.be.revertedWith('reward amount should be greater than leftover amount');
+
+    });
+
+    it('User1 Buys GBT with 50 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(GBT.address, fifty);
+        await GBT.connect(user1).buy(fifty, 1, 1682282187);
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, fifty);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+
+    });
+
+    it('User1 calls treasury skim', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).treasurySkim();
+
+    });
+
+    it('Forward 3 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [3*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 claim rewards', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user1).getReward();
+
+    });
+
+    it('Forward 4 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [3*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('Users claim rewards', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user1).getReward();
+        await XGBT.connect(user2).getReward();
+        await XGBT.connect(user3).getReward();
+
+    });
+
+    it('Owner sends USDC to gumbar', async function () {
+        console.log("******************************************************");
+
+        await USDC.connect(owner).transfer(XGBT.address, ten);
+        await expect(XGBT.connect(owner).recoverERC20(USDC.address, ten)).to.be.reverted;
+        await XGBT.connect(protocol).recoverERC20(USDC.address, ten);
+
+    });
+
+    it('Protocol transfers ownership to owner then transfer back', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(protocol).nominateNewOwner(owner.address);
+        await XGBT.connect(owner).acceptOwnership();
+
+        await XGBT.connect(owner).nominateNewOwner(protocol.address);
+        await XGBT.connect(protocol).acceptOwnership();
+
+    });
 
     it('Gumball Coverage Testing', async function () {
         console.log("******************************************************");
