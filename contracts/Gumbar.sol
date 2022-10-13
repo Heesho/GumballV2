@@ -166,6 +166,8 @@ contract Gumbar is ReentrancyGuard, Owned {
         return IERC721Receiver(address(this)).onERC721Received.selector;
     }
 
+    // can make deposit/withdraw internal to simplify
+
     function depositToken(uint256 amount) external nonReentrant updateReward(msg.sender) {
         address account = msg.sender;
         require(amount > 0, "Cannot deposit 0");
