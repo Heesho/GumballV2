@@ -454,6 +454,34 @@ describe("System Testing", function () {
 
     });
 
+    it('User1 Buys GBT with 50 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(GBT.address, fifty);
+        await GBT.connect(user1).buy(fifty, 1, 1682282187);
+
+    });
+
+    it('User1 swaps for exact 3 NFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GNFT.address, three)
+        let tokenID1 = await GNFT.gumballs(0);
+        let tokenID2 = await GNFT.gumballs(1);
+        let tokenID3 = await GNFT.gumballs(2);
+        await GNFT.connect(user1).swapForExact([tokenID1, tokenID2, tokenID3]);
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+
+    });
+
+
     it('Gumball Coverage Testing', async function () {
         console.log("******************************************************");
 
