@@ -56,6 +56,7 @@ contract Owned {
 }
 
 interface IERC20BondingCurve {
+    function BASE_TOKEN() external view returns (address);
     function mustStayGBT(address account) external view returns (uint256);
 }
 
@@ -99,6 +100,9 @@ contract Gumbar is ReentrancyGuard, Owned {
     ) Owned(_owner) {
         stakingToken = IERC20(_stakingToken);
         stakingNFT = IERC721(_stakingNFT);
+        // Not working yet
+        // addReward(_stakingToken, _stakingToken);
+        // addReward(IERC20BondingCurve(_stakingToken).BASE_TOKEN(), _stakingToken);
     }
 
     function addReward(
@@ -107,10 +111,7 @@ contract Gumbar is ReentrancyGuard, Owned {
     )
         public
     {
-        require(
-            (msg.sender == owner || msg.sender == address(stakingToken)),
-            "addReward: permission is denied!"
-        );
+        require((msg.sender == owner || msg.sender == address(this)),"addReward: permission is denied!"); // maybe set to msg.sender == factory
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
