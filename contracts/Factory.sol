@@ -48,7 +48,7 @@ contract Factory is Ownable, ReentrancyGuardUpgradeable {
     address tokenClone = createProxy(tokenLibraryAddress);
     address gumballClone = createProxy(gumballLibraryAddress);
 
-    address gumbarAddr = address(deployGumbar(address(this), tokenClone, gumballClone, _baseToken));
+    address gumbarAddr = address(deployGumbar(owner(), tokenClone, gumballClone, _baseToken));
 
     ERC20BondingCurveL(tokenClone).initialize(
       name, 

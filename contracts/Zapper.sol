@@ -183,63 +183,6 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
         ETH.transfer(msg.sender, ETH.balanceOf(address(this)) - reserveETH);
     }
 
-    function zapGbtIn(Request[] memory request) external whenNotPaused {
-
-        Txn[] memory t = new Txn[](request.length);
-
-        bytes14 response;
-        uint256 index;
-        
-        for (uint256 i = 0; i < request.length; i++) {
-            
-            (index, response) = findDeployment(request[i].token);
-
-            if (response == bytes14('token')) {
-                revert('Use zapEthIn instead');
-            }
-
-            if (response == bytes14('gumball')) {
-
-                IERC20(IFactory(factory).tokensDeployed(index)).transferFrom(msg.sender, address(this), request[i].amountIn);
-                
-                if (request[i].ownedByProtocol) {
-                    verifyApproval(IFactory(factory).gumballsDeployed(index), request[i].id.length * 1e18, IFactory(factory).gumballsDeployed(index));
-                    IGumball(IFactory(factory).gumballsDeployed(index)).swapForExact(request[i].id);
-                } else {
-                    verifyApproval(IFactory(factory).gumballsDeployed(index), request[i].amountOut, IFactory(factory).gumballsDeployed(index));
-                    IGumball(IFactory(factory).gumballsDeployed(index)).swap(request[i].amountOut);
-                }
-            }
-
-            t[i]._token = request[i].token;
-            t[i]._amount = request[i].amountOut;
-        }
-
-        for (uint256 i = 0; i < t.length; i++) {
-
-            (uint256 ind, ) = findDeployment(t[i]._token);
-
-            if (request[i].ownedByProtocol) {
-                for (uint256 j = 0; j < request[i].amountOut / 1e18; j++) {
-                    IERC721(t[i]._token).transferFrom(address(this), msg.sender, request[i].id[j]);
-                }
-            } else {
-                for (uint256 j = 1; j <= request[i].amountOut / 1e18; j++) {
-                    IERC721(t[i]._token).transferFrom(address(this), msg.sender, IGumball(IFactory(factory).gumballsDeployed(ind)).totalSupply() - j);
-                }  
-            }
-
-            // Return excess GBT if any
-            if (IERC20(IFactory(factory).tokensDeployed(ind)).balanceOf(address(this)) > 0) {
-                IERC20(IFactory(factory).tokensDeployed(ind)).transfer(msg.sender, IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this)));
-            }
-        }
-    }
-
-    function zapGbtOut(Request[] memory request) external whenNotPaused {
-
-    }
-
     function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) public view returns (bytes4) {
         return IERC721Receiver(address(this)).onERC721Received.selector;
     }

@@ -76,6 +76,7 @@ contract GumbarL is ReentrancyGuard, Owned {
 
     IERC20 public stakingToken;
     IERC721 public stakingNFT;
+    address public factory;
     mapping(address => Reward) public rewardData;
     mapping(address => bool) public isRewardToken;
     address[] public rewardTokens;
@@ -100,6 +101,7 @@ contract GumbarL is ReentrancyGuard, Owned {
     ) Owned(_owner) {
         stakingToken = IERC20(_stakingToken);
         stakingNFT = IERC721(_stakingNFT);
+        factory = msg.sender;
         addReward(_stakingToken, _stakingToken);
         addReward(_baseToken, _stakingToken);
     }
@@ -110,7 +112,7 @@ contract GumbarL is ReentrancyGuard, Owned {
     )
         public
     {
-        require((msg.sender == owner),"addReward: permission is denied!"); // maybe set to msg.sender == factory
+        require((msg.sender == owner || msg.sender == factory),"addReward: permission is denied!"); // maybe set to msg.sender == factory
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
