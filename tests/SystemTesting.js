@@ -607,6 +607,10 @@ describe("System Testing", function () {
         await GNFT.currentPrice();
         await GNFT.gumballs.length;
 
+        await GNFT.connect(protocol).setBaseURI("hello");
+        await GNFT.connect(protocol).setContractURI("hello");
+        await GNFT.tokenURI(0);
+
     });
 
     it('Gumbar Coverage Testing', async function () {
