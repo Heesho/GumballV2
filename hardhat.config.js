@@ -36,6 +36,24 @@ module.exports = {
           },
         }
       },
+      "contracts/ERC20BondingCurveL.sol": {
+        version: "0.8.4",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,
+          },
+        }
+      },
+      "contracts/Factory.sol": {
+        version: "0.8.11",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,
+          },
+        }
+      },
     }
   },
   networks: {

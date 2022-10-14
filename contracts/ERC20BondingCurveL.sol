@@ -16,12 +16,16 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
+interface IFactory {
+    function getOwner() external view returns (address);
+}
+
 interface IGumbar {
     function balanceOf(address account) external view returns (uint256);
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external; 
 }
 
-contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
+contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // Bonding Curve Variables
@@ -79,7 +83,6 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         address _gumball,
         address _gumbar,
         address _artist,
-        address _protocol, // added for hardhat testing
         uint256 _delay
     ) public initializer {
         __ERC20_init(__name, __symbol);
@@ -98,8 +101,7 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
         start = block.timestamp;
         delay = _delay;
-        // protocol = IFactory(msg.sender).getOwner(); // removed for hardhat testing
-        protocol = _protocol; // added for hardhat testing
+        protocol = IFactory(msg.sender).getOwner();
         factory = msg.sender;
 
         _mint(address(this), _supplyGBT);
@@ -257,12 +259,14 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         treasuryBASE = 0;
         treasuryGBT = 0;
 
+        // requires here 
         IERC20Upgradeable(address(this)).approve(gumbar, 0);
         IERC20Upgradeable(address(this)).approve(gumbar, _treasuryGBT * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
         IERC20Upgradeable(address(this)).safeTransfer(artist, _treasuryGBT * ARTIST / DIVISOR);
         IERC20Upgradeable(address(this)).safeTransfer(protocol, _treasuryGBT * TREASURY / DIVISOR);
 
+        // requires here
         IERC20Upgradeable(BASE_TOKEN).approve(gumbar, 0);
         IERC20Upgradeable(BASE_TOKEN).approve(gumbar, _treasuryBASE * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(BASE_TOKEN, _treasuryBASE * GUMBAR / DIVISOR);
@@ -348,6 +352,12 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         for (uint256 i = 0; i < accounts.length; i++) {
             whitelist[accounts[i]] = _bool;
         }
+    }
+
+    function updateOwnership() external onlyProtocol() {
+       protocol = IFactory(factory).getOwner();
+
+       emit UpdateOwnership(protocol);
     }
 
     ////////////////////

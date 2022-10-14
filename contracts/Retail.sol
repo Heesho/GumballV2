@@ -113,13 +113,13 @@ contract Retail is Owned {
         uint256 balanceGBT = IERC20(GBT).balanceOf(address(this));
         uint256 balanceBASE = IERC20(BASE).balanceOf(address(this));
         if (balanceGBT > 0) {
-            IERC20(GBT).approve(retailRewarder, 0);
+
             IERC20(GBT).approve(retailRewarder, balanceGBT);
             IRetailRewarder(retailRewarder).notifyRewardAmount(GBT, balanceGBT);
             // emit GBT reward added
         }
         if (balanceBASE > 0) {
-            IERC20(BASE).approve(retailRewarder, 0);
+
             IERC20(BASE).approve(retailRewarder, balanceBASE);
             IRetailRewarder(retailRewarder).notifyRewardAmount(BASE, balanceBASE);
             // emit BASE reward added
