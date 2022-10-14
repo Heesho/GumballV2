@@ -8,12 +8,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 library Math {
-    /**
-     * @dev Returns the largest of two numbers.
-     */
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
-    }
 
     /**
      * @dev Returns the smallest of two numbers.
@@ -22,14 +16,6 @@ library Math {
         return a < b ? a : b;
     }
 
-    /**
-     * @dev Returns the average of two numbers. The result is rounded towards
-     * zero.
-     */
-    function average(uint256 a, uint256 b) internal pure returns (uint256) {
-        // (a + b) / 2 can overflow, so we distribute
-        return (a / 2) + (b / 2) + (((a % 2) + (b % 2)) / 2);
-    }
 }
 
 contract Owned {
@@ -150,7 +136,7 @@ contract RetailRewarder is ReentrancyGuard, Owned {
 
     // can make deposit/withdraw internal to simplify
 
-    function deposit(address account, uint256 amount) external nonReentrant updateReward(msg.sender) {
+    function deposit(address account, uint256 amount) external nonReentrant updateReward(account) {
         require(msg.sender == retail, "!AUTH");
         require(amount > 0, "Cannot deposit 0");
         _totalSupply = _totalSupply + amount;
@@ -183,7 +169,6 @@ contract RetailRewarder is ReentrancyGuard, Owned {
         } else {
             uint256 remaining = rewardData[_rewardsToken].periodFinish - block.timestamp;
             uint256 leftover = remaining * rewardData[_rewardsToken].rewardRate;
-            require(reward > leftover, "reward amount should be greater than leftover amount"); 
             rewardData[_rewardsToken].rewardRate = (reward + leftover) / DURATION;
         }
 

@@ -32,7 +32,7 @@ const startTime = Math.floor(Date.now() / 1000);
 let owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball, retail, rewarder;
 let weth, GBT, XGBT, GNFT, USDC;
 
-describe.only("Retail Testing", function () {
+describe("Retail Testing", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
@@ -121,6 +121,648 @@ describe.only("Retail Testing", function () {
         await GNFT.connect(user1).swap(one);
 
     });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+
+    });
+
+    it('User1 redeems 1 gNFT to Retail', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user1.address, 0);
+        await GNFT.connect(user1).approve(retail.address, tokenID1);
+        await retail.connect(user1).redeem(tokenID1);
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+
+    });
+
+    it('User3 calls skim treasury on bonding curve', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).treasurySkim();
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User1 calls collect on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.collect();
+
+    });
+
+    it('User1 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+
+    });
+
+    it('Forward 3 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [3*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User2 Buys GBT with 10 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user2).approve(GBT.address, ten);
+        await GBT.connect(user2).buy(ten, 1, 1682282187);
+
+    });
+
+    it('User2 converts 1 GBT to 1 gNFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GNFT.address, one);
+        await GNFT.connect(user2).swap(one);
+
+    });
+
+    it('User2 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GBT.address, ten);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+
+    });
+
+    it('User2 redeems 1 gNFT to Retail', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user2.address, 0);
+        await GNFT.connect(user2).approve(retail.address, tokenID1);
+        await retail.connect(user2).redeem(tokenID1);
+
+    });
+
+    it('User2 Buys GBT with 10 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user2).approve(GBT.address, ten);
+        await GBT.connect(user2).buy(ten, 1, 1682282187);
+
+    });
+
+    it('User2 converts 2 GBT to 2 gNFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GNFT.address, three);
+        await GNFT.connect(user2).swap(three);
+
+    });
+
+    it('User2 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GBT.address, ten);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+
+    });
+
+    it('User2 redeems 3 gNFT to Retail', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user2.address, 0);
+        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user2.address, 1);
+        let tokenID3 = await GNFT.tokenOfOwnerByIndex(user2.address, 2);
+        await GNFT.connect(user2).approve(retail.address, tokenID1);
+        await GNFT.connect(user2).approve(retail.address, tokenID2);
+        await GNFT.connect(user2).approve(retail.address, tokenID3);
+        await retail.connect(user2).redeem(tokenID1);
+        await retail.connect(user2).redeem(tokenID2);
+        await retail.connect(user2).redeem(tokenID3);
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+
+    });
+
+    it('User3 calls skim treasury on bonding curve', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).treasurySkim();
+
+    });
+
+    it('Forward 1 day', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User1 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+
+    });
+
+    it('Forward 1 day', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User1 and User2 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+        await rewarder.connect(user2).getReward();
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, oneHundred);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+
+    });
+
+    it('User2 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GBT.address, oneHundred);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+
+    });
+
+    it('Forward 2 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [2*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User3 calls skim treasury on bonding curve', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).treasurySkim();
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User3 converts 5 GBT to 5 gNFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GNFT.address, five);
+        await GNFT.connect(user3).swap(five);
+
+    });
+
+    it('User3 redeems 1 gNFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user3.address, 0);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID);
+        await GNFT.connect(user3).redeem([tokenID]);
+
+    });
+
+    it('User3 stakes 2 GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(XGBT.address, two);
+        await XGBT.connect(user3).depositToken(two);
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+
+    });
+
+    it('User3 borrows max ETH', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).borrowMax();
+
+    });
+
+    it('User3 stakes 2 NFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user3.address, 0);
+        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user3.address, 1);
+        await GNFT.connect(user3).approve(XGBT.address, tokenID1);
+        await GNFT.connect(user3).approve(XGBT.address, tokenID2);
+        await XGBT.connect(user3).depositNFT([tokenID1, tokenID2]);
+    });
+
+    it('User3 redeems 2 gNFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user3.address, 0);
+        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user3.address, 1);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID1);
+        await GNFT.connect(user3).approve(GNFT.address, tokenID2);
+        await GNFT.connect(user3).redeem([tokenID1, tokenID2]);
+
+    });
+
+    it('User3 stakes 2 GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(XGBT.address, oneHundred);
+        await XGBT.connect(user3).depositToken(await GBT.balanceOf(user3.address));
+
+    });
+
+    it('User3 borrows max ETH', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).borrowMax();
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await expect(GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187)).to.be.revertedWith("Less than Min");
+        await expect(GBT.connect(user3).sell(0, 1, 1682282187)).to.be.revertedWith("Less than Min");
+        await expect(GBT.connect(user3).buy(0, 1, 1682282187)).to.be.revertedWith("Less than Min");
+
+    });
+
+    it('Forward 6 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [6*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User3 calls skim treasury on bonding curve', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).treasurySkim();
+        await expect(GBT.connect(user3).treasurySkim()).to.be.reverted;
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+
+    });
+
+    it('Forward 6 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [6*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User3 calls skim treasury on bonding curve', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).treasurySkim();
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User1 and User2 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+        await rewarder.connect(user2).getReward();
+
+    });
+
+    it('User3 repays loan', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).repayMax();
+
+    });
+
+    it('User3 unstakes 3 NFT', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await XGBT.balanceNFT(user3.address, 0);
+        let tokenID2 = await XGBT.balanceNFT(user3.address, 1);
+        await XGBT.connect(user3).withdrawNFT([tokenID1, tokenID2]);
+
+    });
+
+    it('User3 redeems 2 gNFT to Retail', async function () {
+        console.log("******************************************************");
+
+        let tokenID1 = await GNFT.tokenOfOwnerByIndex(user3.address, 0);
+        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user3.address, 1);
+        await GNFT.connect(user3).approve(retail.address, tokenID1);
+        await GNFT.connect(user3).approve(retail.address, tokenID2);
+        await retail.connect(user3).redeem(tokenID1);
+        await retail.connect(user3).redeem(tokenID2);
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+
+    });
+
+    it('Forward 7 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [7*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User3 calls skim treasury on bonding curve', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).treasurySkim();
+
+    });
+
+    it('User1 calls collect on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.collect();
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('Forward 1 day', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [1*24*3600]); 
+        await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User1 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+
+
+    });
+
+    it('User1 and User2 and User3 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+        await rewarder.connect(user2).getReward();
+        await rewarder.connect(user3).getReward();
+
+    });
+
+    it('User1 and User2 and User3 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+        await rewarder.connect(user2).getReward();
+        await rewarder.connect(user3).getReward();
+
+    });
+
+    it('User3 Buys GBT with 100 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, oneHundred);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+
+    });
+
+    it('User2 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user2).approve(GBT.address, oneHundred);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+
+    });
+
+    it('User3 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).approve(GBT.address, oneHundred);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+
+    });
+
+    it('User3 calls skim treasury on bonding curve', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user3).treasurySkim();
+
+    });
+
+    it('User1 calls claim to rewarder on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(user1).claimFeesToRewarder();
+
+    });
+
+    it('User1 calls collect on retail', async function () {
+        console.log("******************************************************");
+
+        await retail.collect();
+
+    });
+
+    it('User1 and User2 and User3 claims retail rewards', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(user1).getReward();
+        await rewarder.connect(user2).getReward();
+        await rewarder.connect(user3).getReward();
+
+    });
+
+    it('Artist transfers ownership to owner then transfer back', async function () {
+        console.log("******************************************************");
+
+        await retail.connect(artist).nominateNewOwner(owner.address);
+        await retail.connect(owner).acceptOwnership();
+
+        await retail.connect(owner).nominateNewOwner(artist.address);
+        await retail.connect(artist).acceptOwnership();
+
+    });
+
+    it('Artist transfers ownership to owner then transfer back', async function () {
+        console.log("******************************************************");
+
+        await rewarder.connect(artist).nominateNewOwner(owner.address);
+        await rewarder.connect(owner).acceptOwnership();
+
+        await rewarder.connect(owner).nominateNewOwner(artist.address);
+        await rewarder.connect(artist).acceptOwnership();
+
+    });
+
+    it('Rewarder coverage', async function () {
+        console.log("******************************************************");
+
+        await rewarder.balanceOf(user1.address);
+        await rewarder.connect(artist).setRewardsDistributor(GBT.address, retail.address);
+
+    });
+
+
 
     it('System Status', async function () {
         console.log("******************************************************");

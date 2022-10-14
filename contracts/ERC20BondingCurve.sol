@@ -257,12 +257,14 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         treasuryBASE = 0;
         treasuryGBT = 0;
 
+        // requires here 
         IERC20Upgradeable(address(this)).approve(gumbar, 0);
         IERC20Upgradeable(address(this)).approve(gumbar, _treasuryGBT * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
         IERC20Upgradeable(address(this)).safeTransfer(artist, _treasuryGBT * ARTIST / DIVISOR);
         IERC20Upgradeable(address(this)).safeTransfer(protocol, _treasuryGBT * TREASURY / DIVISOR);
 
+        // requires here
         IERC20Upgradeable(BASE_TOKEN).approve(gumbar, 0);
         IERC20Upgradeable(BASE_TOKEN).approve(gumbar, _treasuryBASE * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(BASE_TOKEN, _treasuryBASE * GUMBAR / DIVISOR);
