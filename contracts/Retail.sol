@@ -56,7 +56,6 @@ interface IRetailRewarder {
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
 }
 
-
 contract Retail is Owned {
 
     uint256 public immutable AMOUNT = 1e18;

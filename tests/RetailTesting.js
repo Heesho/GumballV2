@@ -29,10 +29,10 @@ const startBlock = "1";
 const startTime = Math.floor(Date.now() / 1000);
 
 // users
-let owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball;
+let owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball, retail, rewarder;
 let weth, GBT, XGBT, GNFT, USDC;
 
-describe("Whitelist testing", function () {
+describe.only("Retail Testing", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
@@ -65,7 +65,7 @@ describe("Whitelist testing", function () {
                              gumbar.address,
                              artist.address,
                              protocol.address,
-                             24*60*60
+                             0
                              );
 
         const GNFTArtifact = await ethers.getContractFactory("Gumball");
@@ -89,16 +89,23 @@ describe("Whitelist testing", function () {
         await XGBT.connect(protocol).addReward(GBT.address, GBT.address);
         await XGBT.connect(protocol).addReward(weth.address, GBT.address);
         console.log("- Gumbar Initialized");
+
+        const RetailArtifact = await ethers.getContractFactory("Retail");
+        const RetailContract = await RetailArtifact.deploy(artist.address, GBT.address, XGBT.address, GNFT.address);
+        retail = await ethers.getContractAt("Retail", RetailContract.address);
+
+        const RewarderArtifact = await ethers.getContractFactory("RetailRewarder");
+        const RewarderContract = await RewarderArtifact.deploy(artist.address, retail.address);
+        rewarder = await ethers.getContractAt("RetailRewarder", RewarderContract.address);
+
+        await retail.connect(artist).setRetailRewarder(rewarder.address);
+        await rewarder.connect(artist).addReward(GBT.address, retail.address);
+        await rewarder.connect(artist).addReward(weth.address, retail.address);
         
         console.log("Initialization Complete");
         console.log("******************************************************");
     });
 
-    it('Whitelist User1 and User2', async function () {
-        console.log("******************************************************");
-        await GBT.connect(protocol)._whitelist([user1.address, user2.address], true);
-    });
-
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
 
@@ -107,70 +114,11 @@ describe("Whitelist testing", function () {
 
     });
 
-    it('User1 Buys GBT with 1 WETH', async function () {
+    it('User1 converts 1 GBT to 1 gNFT', async function () {
         console.log("******************************************************");
 
-        await weth.connect(user1).approve(GBT.address, one);
-        await GBT.connect(user1).buy(one, 1, 1682282187);
-
-    });
-
-    it('User1 Buys GBT with 1 WETH', async function () {
-        console.log("******************************************************");
-
-        await weth.connect(user1).approve(GBT.address, one);
-        await expect(GBT.connect(user1).buy(one, 1, 1682282187)).to.be.revertedWith("Whitelist amount overflow");
-
-    });
-
-    it('User1 sells all GBT', async function () {
-        console.log("******************************************************");
-
-        await GBT.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
-
-    });
-
-    it('User1 Buys GBT with 1 WETH', async function () {
-        console.log("******************************************************");
-
-        await weth.connect(user1).approve(GBT.address, one);
-        await expect(GBT.connect(user1).buy(one, 1, 1682282187)).to.be.revertedWith("Whitelist amount overflow");
-
-    });
-
-    it('User3 tries to Buy GBT with 10 WETH', async function () {
-        console.log("******************************************************");
-
-        await weth.connect(user3).approve(GBT.address, ten);
-        await expect(GBT.connect(user3).buy(ten, 1, 1682282187)).to.be.revertedWith("Market Closed");
-
-    });
-
-    it('User3 trys to Buy GBT with 10 WETH after 24 hours', async function () {
-        console.log("******************************************************");
-
-        await network.provider.send('evm_increaseTime', [24*3600]); 
-        await network.provider.send('evm_mine');
-
-        await weth.connect(user3).approve(GBT.address, ten);
-        await GBT.connect(user3).buy(ten, 1, 1682282187);
-
-    });
-
-    it('User1 Buys GBT with 10 WETH', async function () {
-        console.log("******************************************************");
-
-        await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
-
-    });
-
-    it('User2 Buys GBT with 10 WETH', async function () {
-        console.log("******************************************************");
-
-        await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).approve(GNFT.address, one);
+        await GNFT.connect(user1).swap(one);
 
     });
 
@@ -197,6 +145,15 @@ describe("Whitelist testing", function () {
         let protocolGBT = await GBT.balanceOf(protocol.address);
         let protocolETH = await weth.balanceOf(protocol.address);
 
+        let retailGBT = await GBT.balanceOf(retail.address);
+        let retailETH = await weth.balanceOf(retail.address);
+        let retailXGBT = await XGBT.balanceOf(retail.address);
+        let retailBorrowedETH = await GBT.borrowedBASE(retail.address);
+        let retailMustStayGBT = await GBT.mustStayGBT(retail.address);
+        let retailNFT = await rewarder.totalSupply();
+        let retailRDGBT = await rewarder.getRewardForDuration(GBT.address);
+        let retailRDETH = await rewarder.getRewardForDuration(weth.address);
+
         let user1ETH = await weth.balanceOf(user1.address);
         let user1GBT = await GBT.balanceOf(user1.address);
         let user1GNFT = await GNFT.balanceOf(user1.address);
@@ -205,6 +162,7 @@ describe("Whitelist testing", function () {
         let user1EarnedETH = await XGBT.earned(user1.address, weth.address);
         let user1BorrowedETH = await GBT.borrowedBASE(user1.address);
         let user1MustStayGBT = await GBT.mustStayGBT(user1.address);
+        let user1Redeemed = await retail.balanceOf(user1.address);
 
         let user2ETH = await weth.balanceOf(user2.address);
         let user2GBT = await GBT.balanceOf(user2.address);
@@ -214,6 +172,7 @@ describe("Whitelist testing", function () {
         let user2EarnedETH = await XGBT.earned(user2.address, weth.address);
         let user2BorrowedETH = await GBT.borrowedBASE(user2.address);
         let user2MustStayGBT = await GBT.mustStayGBT(user2.address);
+        let user2Redeemed = await retail.balanceOf(user2.address);
 
         let user3ETH = await weth.balanceOf(user3.address);
         let user3GBT = await GBT.balanceOf(user3.address);
@@ -223,6 +182,7 @@ describe("Whitelist testing", function () {
         let user3EarnedETH = await XGBT.earned(user3.address, weth.address);
         let user3BorrowedETH = await GBT.borrowedBASE(user3.address);
         let user3MustStayGBT = await GBT.mustStayGBT(user3.address);
+        let user3Redeemed = await retail.balanceOf(user3.address);
 
         // Invariants
 
@@ -263,6 +223,17 @@ describe("Whitelist testing", function () {
         console.log("ETH", divDec(protocolETH));
         console.log();
 
+        console.log("RETAIL BALANCES");
+        console.log("GBT", divDec(retailGBT));
+        console.log("ETH", divDec(retailETH));
+        console.log("Staked GBT", divDec(retailXGBT));
+        console.log("Borrowed ETH", divDec(retailBorrowedETH));
+        console.log("Must Stay GBT", divDec(retailMustStayGBT));
+        console.log("NFT Redeemed", divDec(retailNFT));
+        console.log("GBT reward for duration", divDec(retailRDGBT));
+        console.log("ETH reward for duration", divDec(retailRDETH));
+        console.log();
+
         console.log("USER1 BALANCES");
         console.log("ETH", divDec(user1ETH));
         console.log("GBT", divDec(user1GBT));
@@ -272,6 +243,7 @@ describe("Whitelist testing", function () {
         console.log("Earned ETH", divDec(user1EarnedETH));
         console.log("Borrowed ETH", divDec(user1BorrowedETH));
         console.log("Must Stay GBT", divDec(user1MustStayGBT));
+        console.log("NFT Redeemed", divDec(user1Redeemed));
         console.log();
 
         console.log("USER2 BALANCES");
@@ -283,6 +255,7 @@ describe("Whitelist testing", function () {
         console.log("Earned ETH", divDec(user2EarnedETH));
         console.log("Borrowed ETH", divDec(user2BorrowedETH));
         console.log("Must Stay GBT", divDec(user2MustStayGBT));
+        console.log("NFT Redeemed", divDec(user2Redeemed));
         console.log();
 
         console.log("USER3 BALANCES");
@@ -294,6 +267,7 @@ describe("Whitelist testing", function () {
         console.log("Earned ETH", divDec(user3EarnedETH));
         console.log("Borrowed ETH", divDec(user3BorrowedETH));
         console.log("Must Stay GBT", divDec(user3MustStayGBT));
+        console.log("NFT Redeemed", divDec(user3Redeemed));
         console.log();
 
     });
