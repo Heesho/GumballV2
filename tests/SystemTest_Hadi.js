@@ -28,8 +28,6 @@ const spiritPerBlock = "10000000000000000000";
 const startBlock = "1";
 const startTime = Math.floor(Date.now() / 1000);
 
-//testing
-
 // users
 let owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball;
 let weth, GBT, XGBT, GNFT, USDC;
