@@ -162,7 +162,7 @@ contract Gumbar is ReentrancyGuard, Owned {
         balanceToken[account] = balanceToken[account] + amount;
         _balances[account] = _balances[account] + amount;
         stakingToken.safeTransferFrom(account, address(this), amount);
-        // emit DepositGBT(msg.sender, amount);
+        emit Deposited(account, amount);
     }
 
     function withdrawToken(uint256 amount) public nonReentrant updateReward(msg.sender) {
@@ -174,7 +174,7 @@ contract Gumbar is ReentrancyGuard, Owned {
         _balances[account] = _balances[account] - amount;
         require(_balances[account] >= IERC20BondingCurve(address(stakingToken)).mustStayGBT(account), "Borrow debt");
         stakingToken.safeTransfer(msg.sender, amount);
-        // emit WithdrawGBT(msg.sender, amount);
+        emit Withdrawn(account, amount);
     }
 
         /** @dev Stake Gumball(s) NFTs to receive rewards
@@ -192,7 +192,7 @@ contract Gumbar is ReentrancyGuard, Owned {
             IERC721(stakingNFT).safeTransferFrom(account, address(this), _id[i]);
         }
 
-        // emit DeposiotNFT(msg.sender, _id);
+        emit Deposited(account, amount);
     }
 
     /** @dev Remove Gumball(s) from the contract and leave staking
@@ -216,7 +216,7 @@ contract Gumbar is ReentrancyGuard, Owned {
             IERC721(stakingNFT).safeTransferFrom(address(this), account, _id[i]);
         }
 
-        // emit WithdrawNFT(msg.sender, _id);
+        emit Withdrawn(account, amount);
     }
 
     function getReward() public nonReentrant updateReward(msg.sender) {
@@ -319,9 +319,8 @@ contract Gumbar is ReentrancyGuard, Owned {
     /* ========== EVENTS ========== */
 
     event RewardAdded(uint256 reward);
-    event Staked(address indexed user, uint256 amount);
+    event Deposited(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
     event Recovered(address token, uint256 amount);
-    event ClaimVotingFees(address indexed from, uint256 claimed0, uint256 claimed1);
 }

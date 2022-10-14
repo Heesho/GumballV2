@@ -105,7 +105,7 @@ contract Retail is Owned {
         IGumbar(XGBT).depositNFT(temp);
         IRetailRewarder(retailRewarder).deposit(account, AMOUNT);
         
-        //emit event
+        emit Redeemed(account, _id);
     }
 
     function claimFeesToRewarder() external {
@@ -116,13 +116,13 @@ contract Retail is Owned {
 
             IERC20(GBT).approve(retailRewarder, balanceGBT);
             IRetailRewarder(retailRewarder).notifyRewardAmount(GBT, balanceGBT);
-            // emit GBT reward added
+            emit RewardStarted(GBT, balanceGBT);
         }
         if (balanceBASE > 0) {
 
             IERC20(BASE).approve(retailRewarder, balanceBASE);
             IRetailRewarder(retailRewarder).notifyRewardAmount(BASE, balanceBASE);
-            // emit BASE reward added
+            emit RewardStarted(BASE, balanceBASE);
         }
     }
 
@@ -130,11 +130,17 @@ contract Retail is Owned {
         IERC20BondingCurve(GBT).borrowMax();
         uint256 balanceBASE = IERC20(BASE).balanceOf(address(this));
         IERC20(BASE).transfer(owner, balanceBASE);
-        // emit event
+        emit Collected(owner, balanceBASE);
     }
 
     function setRetailRewarder(address _rewarder) external onlyOwner {
         retailRewarder = _rewarder;
     }
+
+    /* ========== EVENTS ========== */
+
+    event Redeemed(address indexed account, uint256 id);
+    event RewardStarted(address indexed rewardsToken, uint256 reward);
+    event Collected(address indexed user, uint256 amount);
 
 }

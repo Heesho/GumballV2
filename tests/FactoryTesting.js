@@ -32,7 +32,7 @@ const startTime = Math.floor(Date.now() / 1000);
 let owner, admin, user1, user2, user3, artist, protocol;
 
 
-describe.only("System Testing", function () {
+describe("System Testing", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");

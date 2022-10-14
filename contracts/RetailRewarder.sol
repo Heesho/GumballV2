@@ -141,7 +141,7 @@ contract RetailRewarder is ReentrancyGuard, Owned {
         require(amount > 0, "Cannot deposit 0");
         _totalSupply = _totalSupply + amount;
         _balances[account] = _balances[account] + amount;
-        // emit Deposit(msg.sender, amount);
+        emit Deposited(account, amount);
     }
 
     function getReward() public nonReentrant updateReward(msg.sender) {
@@ -199,9 +199,6 @@ contract RetailRewarder is ReentrancyGuard, Owned {
     /* ========== EVENTS ========== */
 
     event RewardAdded(uint256 reward);
-    event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
+    event Deposited(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
-    event Recovered(address token, uint256 amount);
-    event ClaimVotingFees(address indexed from, uint256 claimed0, uint256 claimed1);
 }
