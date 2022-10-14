@@ -56,11 +56,10 @@ contract Owned {
 }
 
 interface IERC20BondingCurve {
-    function BASE_TOKEN() external view returns (address);
     function mustStayGBT(address account) external view returns (uint256);
 }
 
-contract Gumbar is ReentrancyGuard, Owned {
+contract GumbarL is ReentrancyGuard, Owned {
     using SafeERC20 for IERC20;
 
     uint256 public constant DURATION = 7 days;
@@ -96,10 +95,13 @@ contract Gumbar is ReentrancyGuard, Owned {
     constructor(
         address _owner,
         address _stakingToken,
-        address _stakingNFT
+        address _stakingNFT,
+        address _baseToken
     ) Owned(_owner) {
         stakingToken = IERC20(_stakingToken);
         stakingNFT = IERC721(_stakingNFT);
+        addReward(_stakingToken, _stakingToken);
+        addReward(_baseToken, _stakingToken);
     }
 
     function addReward(

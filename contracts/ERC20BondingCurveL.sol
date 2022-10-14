@@ -111,11 +111,6 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     ///// Public /////
     //////////////////
 
-// added for hardhat testing
-    function setGumbar(address _gumbar) external {	
-        gumbar = _gumbar;	
-    }
-
     /** @dev returns the current price of {GBT} */
     function currentPrice() public view returns (uint256) {
         return ((reserveVirtualBASE + reserveRealBASE) * 1e18) / reserveGBT;

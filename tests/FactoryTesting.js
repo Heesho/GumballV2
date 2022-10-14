@@ -30,9 +30,9 @@ const startTime = Math.floor(Date.now() / 1000);
 
 // users
 let owner, admin, user1, user2, user3, artist, protocol;
+let GBT1, XGBT1, GNFT1;
 
-
-describe("System Testing", function () {
+describe.only("System Testing", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
@@ -44,6 +44,7 @@ describe("System Testing", function () {
         // mints 1000 tokens to deployer
         const ETHContract = await ethers.getContractFactory("ERC20Mock");
         const ETH = await ETHContract.deploy("ETH", "ETH");
+        const USDC = await ETHContract.deploy("USDC", "USDC");
         await ETH.deployed();
         console.log("- Tokens Initialized");
 
@@ -56,8 +57,8 @@ describe("System Testing", function () {
 
         // initialize Gumbar 
 
-        const GUMBAR = await ethers.getContractFactory("Gumbar");
-        const gumbar = await GUMBAR.deploy(owner.address, owner.address, owner.address);
+        const GUMBAR = await ethers.getContractFactory("GumbarL");
+        const gumbar = await GUMBAR.deploy(owner.address, owner.address, owner.address, ETH.address);
         await gumbar.deployed();
         console.log("- Gumbar Library Initialized");
 
@@ -77,13 +78,19 @@ describe("System Testing", function () {
 
         await factory.deployProxies('GBT1', 'GBT1', ['testuri', 'testURI'], '10000000000000000000000', '10000000000000000000000', ETH.address, owner.address, 0)
         
+        // Attach contracts to first collection
+        let array1 = await factory.deployInfo(0);
+        GBT1 = tokenLibrary.attach(array1[0]);
+        GNFT1 = nftLibrary.attach(array1[1]);
+        XGBT1 = gumbar.attach(await GBT1.gumbar());
+        console.log("- Collection1 Initialized");
+
         console.log("Initialization Complete");
         console.log("******************************************************");
     });
 
     it('System Status', async function () {
         console.log("******************************************************");
-
     });
 
 })
