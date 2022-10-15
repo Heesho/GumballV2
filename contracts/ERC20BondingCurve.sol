@@ -159,6 +159,10 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         return initial_totalSupply;
     }
 
+    function floorPrice() public view returns (uint256) {
+        return (INITIAL_VIRTUAL_BASE * 1e18) / totalSupply();
+    }
+
     function mustStayGBT(address account) public view returns (uint256) {
         uint256 amount = totalSupply() - (INITIAL_VIRTUAL_BASE * totalSupply() / (borrowedBASE[account] + INITIAL_VIRTUAL_BASE));
         return amount;
