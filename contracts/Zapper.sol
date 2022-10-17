@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.8;
@@ -154,6 +155,8 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
     // A burn will occur
     function zapEthOut(Request[] memory request) external whenNotPaused {
 
+        uint256 reserveETH = ETH.balanceOf(address(this));
+
         for (uint256 i = 0; i < request.length; i++) {
             bytes14 response;
             uint256 index;
@@ -234,4 +237,5 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
             revert ('Address not found!');
         }
     }
+>>>>>>> 901f20a55c1da20527f5e22300140fac9e9542b6
 }
