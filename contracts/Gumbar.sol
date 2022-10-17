@@ -144,7 +144,7 @@ contract Gumbar is ReentrancyGuard, Owned {
         return rewardData[_rewardsToken].rewardRate * DURATION;
     }
     
-    function depositedNFT(address account) public view returns (uint256, uint256[] memory) {
+    function balanceOfNFT(address account) public view returns (uint256, uint256[] memory) {
         return (balanceNFT[account].length, balanceNFT[account]);
     }
 
