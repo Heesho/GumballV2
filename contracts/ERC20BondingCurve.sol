@@ -123,10 +123,11 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     function borrowCredit(address account) public view returns (uint256) {
 
         uint256 borrowPowerGBT = IGumbar(gumbar).balanceOf(account);
-
+        if (borrowPowerGBT == 0) {
+            return 0;
+        }
         uint256 borrowTotalBASE = (INITIAL_VIRTUAL_BASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - INITIAL_VIRTUAL_BASE;
         uint256 borrowableBASE = borrowTotalBASE - borrowedBASE[account];
-
         return borrowableBASE;
     }
 
@@ -164,8 +165,13 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     }
 
     function mustStayGBT(address account) public view returns (uint256) {
-        uint256 amount = totalSupply() - (INITIAL_VIRTUAL_BASE * totalSupply() / (borrowedBASE[account] + INITIAL_VIRTUAL_BASE));
+        uint256 accountBorrowedBASE = borrowedBASE[account];
+        if (accountBorrowedBASE == 0) {
+            return 0;
+        }
+        uint256 amount = totalSupply() - (INITIAL_VIRTUAL_BASE * totalSupply() / (accountBorrowedBASE + INITIAL_VIRTUAL_BASE));
         return amount;
+
     }
  
     ////////////////////
