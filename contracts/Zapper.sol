@@ -29,6 +29,7 @@ interface IGumball {
     function redeem(uint256[] memory _id) external;
     function gumballs() external view returns (uint256[] memory arr);
     function totalSupply() external view returns (uint256);
+    function setApprovalForAll(address spender, bool _bool) external;
 }
 
 contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
@@ -153,8 +154,6 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
     // A burn will occur
     function zapEthOut(Request[] memory request) external whenNotPaused {
 
-        uint256 reserveETH = ETH.balanceOf(address(this));
-
         for (uint256 i = 0; i < request.length; i++) {
             bytes14 response;
             uint256 index;
@@ -163,24 +162,31 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
 
             if (response == bytes14('token')) {
                 IERC20(request[i].token).transferFrom(msg.sender, address(this), request[i].amountIn);
+                verifyApproval(IFactory(factory).tokensDeployed(index), request[i].amountIn, request[i].token);
                 IBondingCurve(IFactory(factory).tokensDeployed(index)).sell(request[i].amountIn, 0, 0);
             }
 
             if (response == bytes14('gumball')) {
 
+                uint256[] memory idList = new uint256[](request[i].id.length);
+
                 uint256 bef = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
+
+                IGumball(IFactory(factory).gumballsDeployed(index)).setApprovalForAll(IFactory(factory).gumballsDeployed(index), true);
 
                 for (uint256 idx = 0; idx < request[i].id.length; idx++) {
                     IERC721(request[i].token).transferFrom(msg.sender, address(this), request[i].id[idx]);
-                    IGumball(IFactory(factory).gumballsDeployed(index)).redeem(request[i].id);
+                    idList[idx] = request[i].id[idx];
                 }
                 
+                IGumball(IFactory(factory).gumballsDeployed(index)).redeem(idList);
                 uint256 aft = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
+                verifyApproval(IFactory(factory).tokensDeployed(index), aft - bef, IFactory(factory).tokensDeployed(index));
                 IBondingCurve(IFactory(factory).tokensDeployed(index)).sell(aft - bef, 0, 0);
             }
         }
 
-        ETH.transfer(msg.sender, ETH.balanceOf(address(this)) - reserveETH);
+        ETH.transfer(msg.sender, ETH.balanceOf(address(this)));
     }
 
     function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) public view returns (bytes4) {
