@@ -377,7 +377,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     }
 
     function burn(uint256 _amount) external {
-        // require(msg.sender == gumball, "!Auth"); // removed for hardhat testing
+        require(msg.sender == gumball, "!Auth");
 
         address account = msg.sender;
         // auto boost bonding curve price
