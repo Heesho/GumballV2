@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.8;
@@ -237,5 +236,4 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
             revert ('Address not found!');
         }
     }
->>>>>>> 901f20a55c1da20527f5e22300140fac9e9542b6
 }
