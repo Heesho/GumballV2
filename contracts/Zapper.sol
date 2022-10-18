@@ -64,8 +64,6 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
 
     function zapEthIn(Request[] memory request) external whenNotPaused {
 
-        Txn[] memory t = new Txn[](request.length);
-
         uint256 totalETH = 0;
         uint256 reserveETH = ETH.balanceOf(address(this));
 
@@ -78,32 +76,22 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
         for (uint i = 0; i < request.length; i++) {
             bytes14 response;
             uint256 index;
+            uint256 minted = 0;
 
             (index, response) = findDeployment(request[i].token);
 
             if (response == bytes14('token')) {
 
-                uint256 bef = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
-                verifyApproval(IFactory(factory).tokensDeployed(index), request[i].amountIn, address(ETH));
-                IBondingCurve(IFactory(factory).tokensDeployed(index)).buy(request[i].amountIn, 0, 0);
-                uint256 aft = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
-
-                t[i]._token = IFactory(factory).tokensDeployed(index);
-                t[i]._amount = aft - bef;
-                t[i]._type = bytes14('token');
-                t[i]._base = IFactory(factory).tokensDeployed(index);
-                t[i]._excessBase = totalETH - ETH.balanceOf(address(this));
-                t[i]._excessGBT = 0;
+                revert("Use buy() method on BondingCurve contract");
             }
 
             if (response == bytes14('gumball')) {
 
-                uint256 bef = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
+                uint256 befTs = IGumball(IFactory(factory).gumballsDeployed(index)).totalSupply();
+
                 verifyApproval(IFactory(factory).tokensDeployed(index), request[i].amountIn, address(ETH));
-                uint256 beforeGBT = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
                 IBondingCurve(IFactory(factory).tokensDeployed(index)).buy(request[i].amountIn, 0, 0);
-                uint256 afterGBT = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
-                verifyApproval(IFactory(factory).gumballsDeployed(index), afterGBT - beforeGBT, IFactory(factory).tokensDeployed(index));
+                verifyApproval(IFactory(factory).gumballsDeployed(index), request[i].amountIn, IFactory(factory).tokensDeployed(index));
 
                 if (request[i].ownedByProtocol) {
                     IGumball(IFactory(factory).gumballsDeployed(index)).swapForExact(request[i].id);
@@ -111,36 +99,23 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
                     IGumball(IFactory(factory).gumballsDeployed(index)).swap(request[i].amountOut);
                 }
 
-                uint256 aft = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
+                uint256 aftTs = IGumball(IFactory(factory).gumballsDeployed(index)).totalSupply();
 
-                t[i]._token = IFactory(factory).gumballsDeployed(index);
-                t[i]._amount = request[i].amountOut;
-                t[i]._type = bytes14('gumball');
-                t[i]._base = IFactory(factory).tokensDeployed(index);
-                t[i]._excessBase = totalETH - ETH.balanceOf(address(this));
-                t[i]._excessGBT = aft - bef;
+                minted += aftTs - befTs;
             }
-        }
 
-        for (uint256 i = 0; i < t.length; i++) {
-
-            if (t[i]._type == bytes14('token')) {
-                IERC20(t[i]._token).transfer(msg.sender, t[i]._amount + t[i]._excessGBT);
-            } else if (t[i]._type == bytes14('gumball')) {
-
-                (uint256 index, ) = findDeployment(t[i]._token);
-
-                if (request[i].ownedByProtocol) {
-                    for (uint256 j = 0; j < request[i].amountOut / 1e18; j++) {
-                        IERC721(t[i]._token).transferFrom(address(this), msg.sender, request[i].id[j]);
-                    }
-                } else {
-                    for (uint256 j = 1; j <= request[i].amountOut / 1e18; j++) {
-                        IERC721(t[i]._token).transferFrom(address(this), msg.sender, IGumball(IFactory(factory).gumballsDeployed(index)).totalSupply() - j);
-                    }  
+            if (request[i].ownedByProtocol) {
+                for (uint256 j = 0; j < request[i].amountOut / 1e18; j++) {
+                    IERC721(request[i].token).transferFrom(address(this), msg.sender, request[i].id[j]);
                 }
+            } else {
+                for (uint256 j = 1; j <= minted; j++) {
+                    IERC721(request[i].token).transferFrom(address(this), msg.sender, IGumball(IFactory(factory).gumballsDeployed(index)).totalSupply() - j);
+                }
+            }
 
-                IERC20(IFactory(factory).tokensDeployed(index)).transfer(msg.sender, t[i]._excessGBT);
+            if (IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this)) > 0 && i == request.length -1) {
+                IERC20(IFactory(factory).tokensDeployed(index)).transfer(msg.sender, IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this)));
             }
         }
 
@@ -154,8 +129,6 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
     // A burn will occur
     function zapEthOut(Request[] memory request) external whenNotPaused {
 
-        uint256 reserveETH = ETH.balanceOf(address(this));
-
         for (uint256 i = 0; i < request.length; i++) {
             bytes14 response;
             uint256 index;
@@ -163,28 +136,23 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
             (index, response) = findDeployment(request[i].token);
 
             if (response == bytes14('token')) {
-                IERC20(request[i].token).transferFrom(msg.sender, address(this), request[i].amountIn);
-                verifyApproval(IFactory(factory).tokensDeployed(index), request[i].amountIn, request[i].token);
-                IBondingCurve(IFactory(factory).tokensDeployed(index)).sell(request[i].amountIn, 0, 0);
+                revert('Use sell() on BondingCurve contract');
             }
 
             if (response == bytes14('gumball')) {
 
                 uint256[] memory idList = new uint256[](request[i].id.length);
 
-                uint256 bef = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
-
                 IGumball(IFactory(factory).gumballsDeployed(index)).setApprovalForAll(IFactory(factory).gumballsDeployed(index), true);
 
-                for (uint256 idx = 0; idx < request[i].id.length; idx++) {
-                    IERC721(request[i].token).transferFrom(msg.sender, address(this), request[i].id[idx]);
-                    idList[idx] = request[i].id[idx];
+                for (uint256 j = 0; j < request[i].id.length; j++) {
+                    IERC721(request[i].token).transferFrom(msg.sender, address(this), request[i].id[j]);
+                    idList[j] = request[i].id[j];
                 }
-                
+
                 IGumball(IFactory(factory).gumballsDeployed(index)).redeem(idList);
-                uint256 aft = IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this));
-                verifyApproval(IFactory(factory).tokensDeployed(index), aft - bef, IFactory(factory).tokensDeployed(index));
-                IBondingCurve(IFactory(factory).tokensDeployed(index)).sell(aft - bef, 0, 0);
+                verifyApproval(IFactory(factory).tokensDeployed(index), IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this)), IFactory(factory).tokensDeployed(index));
+                IBondingCurve(IFactory(factory).tokensDeployed(index)).sell(IERC20(IFactory(factory).tokensDeployed(index)).balanceOf(address(this)), 0, 0);
             }
         }
 
@@ -215,14 +183,14 @@ contract GumballZapper is Ownable, Pausable, ReentrancyGuard {
         if (!found) {
             return -1;
         }
-    } 
+    }
 
     function findDeployment(address toFind) public view returns (uint256 _index, bytes14 _type) {
 
         bool found = false;
 
         for(uint256 i = 0; i < IFactory(factory).totalDeployed(); i++) {
-            
+
             if (IFactory(factory).tokensDeployed(i) == toFind) {
                 found = true;
                 return (i, bytes14('token'));
