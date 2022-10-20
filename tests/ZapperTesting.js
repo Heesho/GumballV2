@@ -13,6 +13,8 @@ const two = convert('2', 18);
 const three = convert('3', 18);
 const four = convert('4', 18);
 const five = convert('5', 18);
+const eight = convert('8', 18);
+const nine = convert('9', 18);
 const ten = convert('10', 18);
 const fifty = convert('50', 18)
 const oneHundred = convert('100', 18);
@@ -44,7 +46,7 @@ describe.only("Zapper Testing", function () {
          // mints 1000 tokens to deployer
          const ETHContract = await ethers.getContractFactory("ERC20Mock");
          weth = await ETHContract.deploy("ETH", "ETH");
-         USDC = await ETHContract.deploy("ETH", "ETH");
+        //  USDC = await ETHContract.deploy("ETH", "ETH");
          await weth.deployed();
          await weth.mint(user1.address, oneThousand);
          await weth.mint(user2.address, oneThousand);
@@ -79,7 +81,7 @@ describe.only("Zapper Testing", function () {
          await factory.deployed();
          console.log("- Factory Initialized");
  
-         await factory.deployProxies('GBT1', 'GBT1', ['testuri', 'testURI'], '10000000000000000000000', '10000000000000000000000', weth.address, owner.address, 0)
+         await factory.deployProxies('GBT1', 'GBT1', ['testuri', 'testURI'], '100000000000000000000', '100000000000000000000', weth.address, owner.address, 0)
          
          // Attach contracts to first collection
          let array1 = await factory.deployInfo(0);
@@ -100,13 +102,28 @@ describe.only("Zapper Testing", function () {
         console.log("******************************************************");
     });
 
-    it('User1 Buys NFT with 10 WETH', async function () {
+    it('User1 zaps 10 ETH for NFTs', async function () {
         console.log("******************************************************");
 
-        await weth.connect(user1).approve(zapper.address, five);
+        await weth.connect(user1).approve(zapper.address, oneThousand);
+        await zapper.connect(user1).zapEthIn([[factory.gumballsDeployed(0), ten, eight, [], false]]);
         let vas = await weth.connect(user1).allowance(user1.address, zapper.address);
         console.log(divDec(vas));
-        await zapper.zapEthIn([[factory.gumballsDeployed(0), one, zero, [], false]]);
+    });
+
+    it('User1 zaps NFTs for ETH', async function () {
+        console.log("******************************************************");
+
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user1.address, 0);
+        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user1.address, 1);
+        let tokenID3 = await GNFT.tokenOfOwnerByIndex(user1.address, 2);
+        let tokenID4 = await GNFT.tokenOfOwnerByIndex(user1.address, 4);
+        let tokenID5 = await GNFT.tokenOfOwnerByIndex(user1.address, 5);
+        let tokenID6 = await GNFT.tokenOfOwnerByIndex(user1.address, 6);
+        let tokenID7 = await GNFT.tokenOfOwnerByIndex(user1.address, 7);
+
+        await GNFT.connect(user1).setApprovalForAll(zapper.address, true);
+        await zapper.connect(user1).zapEthOut([[GNFT.address, tokenID, one, ['0'], false]]);
     });
 
     it('System Status', async function () {
