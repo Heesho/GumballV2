@@ -13,6 +13,8 @@ const two = convert('2', 18);
 const three = convert('3', 18);
 const four = convert('4', 18);
 const five = convert('5', 18);
+const six = convert('6', 18);
+const seven = convert('7', 18);
 const eight = convert('8', 18);
 const nine = convert('9', 18);
 const ten = convert('10', 18);
@@ -102,29 +104,47 @@ describe.only("Zapper Testing", function () {
         console.log("******************************************************");
     });
 
-    it('User1 zaps 10 ETH for NFTs', async function () {
+    it('User1 zapsIN ETH for NFTs', async function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(zapper.address, oneThousand);
-        await zapper.connect(user1).zapEthIn([[factory.gumballsDeployed(0), ten, eight, [], false]]);
-        let vas = await weth.connect(user1).allowance(user1.address, zapper.address);
-        console.log(divDec(vas));
+        await zapper.connect(user1).zapEthIn([[factory.gumballsDeployed(0), two, one, [], false]]);
+ 
     });
 
-    it('User1 zaps NFTs for ETH', async function () {
+    it('User1 is unable to zapIN GBT', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(zapper.address, oneThousand);
+        await expect(zapper.connect(user1).zapEthIn([[GBT.address, ten, eight, [], false]])).to.be.revertedWith('Use buy() method on BondingCurve contract');
+
+    });
+
+    it('User1 zapsOUT NFTs for ETH', async function () {
         console.log("******************************************************");
 
         let tokenID = await GNFT.tokenOfOwnerByIndex(user1.address, 0);
-        let tokenID2 = await GNFT.tokenOfOwnerByIndex(user1.address, 1);
-        let tokenID3 = await GNFT.tokenOfOwnerByIndex(user1.address, 2);
-        let tokenID4 = await GNFT.tokenOfOwnerByIndex(user1.address, 4);
-        let tokenID5 = await GNFT.tokenOfOwnerByIndex(user1.address, 5);
-        let tokenID6 = await GNFT.tokenOfOwnerByIndex(user1.address, 6);
-        let tokenID7 = await GNFT.tokenOfOwnerByIndex(user1.address, 7);
-
+        
         await GNFT.connect(user1).setApprovalForAll(zapper.address, true);
         await zapper.connect(user1).zapEthOut([[GNFT.address, tokenID, one, ['0'], false]]);
     });
+
+    it('User1 zapsIN ETH for specific NFTs', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(zapper.address, oneThousand);
+        await zapper.connect(user1).zapEthIn([[factory.gumballsDeployed(0), two, one, ['0'], true]]);
+ 
+    });
+
+    it('User1 is unable to zap GBT OUT', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(zapper.address, oneThousand);
+        await expect(zapper.connect(user1).zapEthOut([[GBT.address, ten, eight, [], false]])).to.be.revertedWith('Use sell() on BondingCurve contract');
+
+    });
+
 
     it('System Status', async function () {
         console.log("******************************************************");
@@ -132,21 +152,11 @@ describe.only("Zapper Testing", function () {
         let user1ETH = await weth.balanceOf(user1.address);
         let user1GBT = await GBT.balanceOf(user1.address);
         let user1GNFT = await GNFT.balanceOf(user1.address);
-        let user1XGBT = await XGBT.balanceOf(user1.address);
-        let user1EarnedGBT = await XGBT.earned(user1.address, GBT.address);
-        let user1EarnedETH = await XGBT.earned(user1.address, weth.address);
-        let user1BorrowedETH = await GBT.borrowedBASE(user1.address);
-        let user1MustStayGBT = await GBT.mustStayGBT(user1.address);
 
         console.log("USER1 BALANCES");
         console.log("ETH", divDec(user1ETH));
         console.log("GBT", divDec(user1GBT));
         console.log("GNFT", divDec(user1GNFT));
-        console.log("Staked GBT", divDec(user1XGBT));
-        console.log("Earned GBT", divDec(user1EarnedGBT));
-        console.log("Earned ETH", divDec(user1EarnedETH));
-        console.log("Borrowed ETH", divDec(user1BorrowedETH));
-        console.log("Must Stay GBT", divDec(user1MustStayGBT));
         console.log();
 
     });
