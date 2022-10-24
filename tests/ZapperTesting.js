@@ -145,6 +145,20 @@ describe.only("Zapper Testing", function () {
 
     });
 
+    it('findToken test', async function () {
+        console.log("******************************************************");
+
+        await zapper.connect(user1).findToken([GNFT.address], GNFT.address);
+
+    });
+
+    it('findToken test2', async function () {
+        console.log("******************************************************");
+
+        await zapper.connect(user1).findToken([user1.address], GNFT.address);
+
+    });
+
 
     it('System Status', async function () {
         console.log("******************************************************");
