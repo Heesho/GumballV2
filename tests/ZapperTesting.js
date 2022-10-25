@@ -34,7 +34,7 @@ const startBlock = "1";
 const startTime = Math.floor(Date.now() / 1000);
 
 // users
-let owner, admin, user1, user2, user3, artist, protocol, gumball;
+let owner, admin, user1, user2, user3, user4, artist, protocol, gumball;
 let GBT, XGBT, GNFT, weth, USDC, zapper, factory;
 let tokenLibrary, nftLibrary;
 
@@ -42,7 +42,7 @@ describe.only("Zapper Testing", function () {
 
     before("Initial set up", async function () {
          // initialize users
-         [owner, admin, user1, user2, user3, artist, protocol] = await ethers.getSigners();
+         [owner, admin, user1, user2, user3, user4, artist, protocol] = await ethers.getSigners();
 
          // initialize tokens
          // mints 1000 tokens to deployer
@@ -112,6 +112,14 @@ describe.only("Zapper Testing", function () {
  
     });
 
+    it('User1 tries to zapsIN ETH using User4 address', async function () {
+        console.log("******************************************************");
+
+        //await weth.connect(user4).approve(zapper.address, oneThousand);
+        await expect(zapper.connect(user1).zapEthIn([[user4.address, two, one, [], false]])).to.be.revertedWith('Address not found!');
+ 
+    });
+
     it('User1 is unable to zapIN GBT', async function () {
         console.log("******************************************************");
 
@@ -158,7 +166,6 @@ describe.only("Zapper Testing", function () {
         await zapper.connect(user1).findToken([user1.address], GNFT.address);
 
     });
-
 
     it('System Status', async function () {
         console.log("******************************************************");
