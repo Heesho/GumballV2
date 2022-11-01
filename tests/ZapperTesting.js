@@ -38,7 +38,7 @@ let owner, admin, user1, user2, user3, user4, artist, protocol, gumball;
 let GBT, XGBT, GNFT, weth, USDC, zapper, factory;
 let tokenLibrary, nftLibrary;
 
-describe.only("Zapper Testing", function () {
+describe("Zapper Testing", function () {
 
     before("Initial set up", async function () {
          // initialize users

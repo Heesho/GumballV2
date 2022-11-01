@@ -16,7 +16,6 @@ pragma solidity ^0.8.0;
 
 interface ITokenContract {
     function currentPrice() external view returns (uint256);
-    function burn(uint256 _amount) external;
     function getProtocol() external view returns (address);
     function initSupply() external view returns (uint256);
 }
@@ -145,7 +144,7 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
             IERC721Upgradeable(address(this)).transferFrom(msg.sender, address(this), _id[i]);
         }
 
-        ITokenContract(tokenContract).burn(burnAmount);
+        IERC20Upgradeable(tokenContract).safeTransfer(tokenContract, burnAmount);
         IERC20Upgradeable(tokenContract).safeTransfer(msg.sender, enWei(_id.length) - burnAmount);
 
         require(IERC721Upgradeable(address(this)).balanceOf(address(this)) > before, "Bad Swap");

@@ -26,7 +26,6 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
     // Bonding Curve Variables
     address public BASE_TOKEN;
-    uint256 public INITIAL_VIRTUAL_BASE;
 
     uint256 public reserveVirtualBASE;
     uint256 public reserveRealBASE;
@@ -89,7 +88,6 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         gumbar = _gumbar;
         artist = _artist;
 
-        INITIAL_VIRTUAL_BASE = _initialVirtualBASE;
         reserveVirtualBASE = _initialVirtualBASE;
 
         reserveRealBASE = 0;
@@ -123,11 +121,10 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     function borrowCredit(address account) public view returns (uint256) {
 
         uint256 borrowPowerGBT = IGumbar(gumbar).balanceOf(account);
-        if (borrowPowerGBT == 0) {
-            return 0;
-        }
-        uint256 borrowTotalBASE = (INITIAL_VIRTUAL_BASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - INITIAL_VIRTUAL_BASE;
+
+        uint256 borrowTotalBASE = (reserveVirtualBASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - reserveVirtualBASE;
         uint256 borrowableBASE = borrowTotalBASE - borrowedBASE[account];
+
         return borrowableBASE;
     }
 
@@ -161,17 +158,12 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     }
 
     function floorPrice() public view returns (uint256) {
-        return (INITIAL_VIRTUAL_BASE * 1e18) / totalSupply();
+        return (reserveVirtualBASE * 1e18) / totalSupply();
     }
 
     function mustStayGBT(address account) public view returns (uint256) {
-        uint256 accountBorrowedBASE = borrowedBASE[account];
-        if (accountBorrowedBASE == 0) {
-            return 0;
-        }
-        uint256 amount = totalSupply() - (INITIAL_VIRTUAL_BASE * totalSupply() / (accountBorrowedBASE + INITIAL_VIRTUAL_BASE));
+        uint256 amount = totalSupply() - (reserveVirtualBASE * totalSupply() / (borrowedBASE[account] + reserveVirtualBASE));
         return amount;
-
     }
  
     ////////////////////
@@ -291,7 +283,7 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
         uint256 borrowPowerGBT = IGumbar(gumbar).balanceOf(account);
 
-        uint256 borrowTotalBASE = (INITIAL_VIRTUAL_BASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - INITIAL_VIRTUAL_BASE;
+        uint256 borrowTotalBASE = (reserveVirtualBASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - reserveVirtualBASE;
         uint256 borrowableBASE = borrowTotalBASE - borrowedBASE[account];
 
         require(borrowableBASE >= _amount, "Borrow Underflow");
@@ -311,7 +303,7 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
         uint256 borrowPowerGBT = IGumbar(gumbar).balanceOf(account);
 
-        uint256 borrowTotalBASE = (INITIAL_VIRTUAL_BASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - INITIAL_VIRTUAL_BASE;
+        uint256 borrowTotalBASE = (reserveVirtualBASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - reserveVirtualBASE;
         uint256 borrowableBASE = borrowTotalBASE - borrowedBASE[account];
 
         borrowedBASE[account] += borrowableBASE;
@@ -371,26 +363,10 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         if(baseBalance > reserveRealBASE) {
             treasuryBASE += (baseBalance - reserveRealBASE - treasuryBASE);
         }
-    }
-
-    function burn(uint256 _amount) external {
-        // require(msg.sender == gumball, "!Auth"); // removed for hardhat testing
-
-        address account = msg.sender;
-        // auto boost bonding curve price
-        uint256 oldReserveBASE = reserveVirtualBASE + reserveRealBASE;
-
-        uint256 oldReserveGBT = reserveGBT;
-        uint256 newReserveGBT = INITIAL_VIRTUAL_BASE * (totalSupply() - _amount) / oldReserveBASE;
-
-        if (oldReserveGBT > newReserveGBT) {
-            uint256 reserveBurnGBT = oldReserveGBT - newReserveGBT;
-            reserveGBT = newReserveGBT;
-            _burn(address(this), reserveBurnGBT);
+        uint256 gbtBalance = IERC20Upgradeable(address(this)).balanceOf(address(this));
+        if (gbtBalance > reserveGBT) {
+            treasuryGBT += (gbtBalance - reserveGBT - treasuryGBT);
         }
-        _burn(account, _amount);
-
-        emit Burn(_amount);
     }
 
     ////////////////////
