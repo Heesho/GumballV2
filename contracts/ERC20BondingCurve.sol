@@ -360,11 +360,11 @@ contract ERC20BondingCurve is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     // double check this function especially the borroedBase
     function syncReserves() internal {
         uint256 baseBalance = IERC20Upgradeable(BASE_TOKEN).balanceOf(address(this)) + borrowedTotalBASE;
-        if(baseBalance > reserveRealBASE) {
+        if(baseBalance > reserveRealBASE + treasuryBASE) {
             treasuryBASE += (baseBalance - reserveRealBASE - treasuryBASE);
         }
         uint256 gbtBalance = IERC20Upgradeable(address(this)).balanceOf(address(this));
-        if (gbtBalance > reserveGBT) {
+        if (gbtBalance > reserveGBT + treasuryGBT) {
             treasuryGBT += (gbtBalance - reserveGBT - treasuryGBT);
         }
     }
