@@ -18,6 +18,7 @@ interface ITokenContract {
     function currentPrice() external view returns (uint256);
     function getProtocol() external view returns (address);
     function initSupply() external view returns (uint256);
+    function artist() external view returns (address);
 }
 
 contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardUpgradeable {
@@ -156,7 +157,7 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
       * @param uri is the updated URI
     */
     function setBaseURI(string memory uri) external {
-        require(msg.sender == ITokenContract(tokenContract).getProtocol(), "!Auth");
+        require(msg.sender == ITokenContract(tokenContract).artist(), "!Auth");
 
         baseTokenURI = uri;
 
@@ -167,7 +168,7 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
       * @param uri is the updated URI
     */
     function setContractURI(string memory uri) external {
-        require(msg.sender == ITokenContract(tokenContract).getProtocol(), "!Auth");
+        require(msg.sender == ITokenContract(tokenContract).artist(), "!Auth");
         _contractURI = uri;
 
         emit SetContractURI(uri);
@@ -222,8 +223,6 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
             gumballs[gumballs.length - 1] = tempID;
             gumballIndex[swapID] = int256(_index);
 
-            gumballs.pop();
-        } else if (_index == gumballs.length - 1) {
             gumballs.pop();
         } else {
             gumballs.pop();

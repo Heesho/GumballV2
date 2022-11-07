@@ -85,9 +85,11 @@ contract Gumbar is ReentrancyGuard, Owned {
     mapping(address => mapping(address => uint256)) public userRewardPerTokenPaid;
     mapping(address => mapping(address => uint256)) public rewards;
 
-    uint256 private _totalSupply;
+    uint256 private _totalSupply; 
     mapping(address => uint256) private _balances;
 
+    uint256 private _totalToken;
+    uint256 private _totalNFT;
     mapping(address => uint256) public balanceToken; // Accounts deposited GBTs
     mapping(address => uint256[]) public balanceNFT; // Accounts deposited NFTs
 
@@ -108,10 +110,11 @@ contract Gumbar is ReentrancyGuard, Owned {
     )
         public
     {
-        require((msg.sender == owner),"addReward: permission is denied!"); // maybe set to msg.sender == factory
+        require((msg.sender == owner),"addReward: permission is denied!");
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
+        isRewardToken[_rewardsToken] = true;
     } 
 
     /* ========== VIEWS ========== */
@@ -160,6 +163,7 @@ contract Gumbar is ReentrancyGuard, Owned {
         address account = msg.sender;
         require(amount > 0, "Cannot deposit 0");
         _totalSupply = _totalSupply + amount;
+        _totalToken = _totalToken + amount;
         balanceToken[account] = balanceToken[account] + amount;
         _balances[account] = _balances[account] + amount;
         stakingToken.safeTransferFrom(account, address(this), amount);
@@ -171,6 +175,7 @@ contract Gumbar is ReentrancyGuard, Owned {
         require(amount > 0, "Cannot withdraw 0");
         require(amount <= balanceToken[account], "Insufficient balance"); 
         _totalSupply = _totalSupply - amount;
+        _totalToken = _totalToken - amount;
         balanceToken[account] = balanceToken[account] - amount;
         _balances[account] = _balances[account] - amount;
         require(_balances[account] >= IERC20BondingCurve(address(stakingToken)).mustStayGBT(account), "Borrow debt");
@@ -186,6 +191,7 @@ contract Gumbar is ReentrancyGuard, Owned {
         require(_id.length > 0, "Cannot deposit 0");
         uint256 amount = _id.length * 1e18;
         _totalSupply = _totalSupply + amount;
+        _totalNFT = _totalNFT + amount;
         _balances[account] = _balances[account] + amount;
 
         for (uint256 i = 0; i < _id.length; i++) {
@@ -210,6 +216,7 @@ contract Gumbar is ReentrancyGuard, Owned {
         }
 
         _totalSupply = _totalSupply - amount;
+        _totalNFT = _totalNFT - amount;
         _balances[account] = _balances[account] - amount;
         require(_balances[account] >= IERC20BondingCurve(address(stakingToken)).mustStayGBT(account), "Borrow debt");
 
@@ -230,12 +237,14 @@ contract Gumbar is ReentrancyGuard, Owned {
                 emit RewardPaid(msg.sender, _rewardsToken, reward);
             }
         }
+        require(IERC20(stakingToken).balanceOf(address(this)) >= _totalToken);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external updateReward(address(0)) {
         require(rewardData[_rewardsToken].rewardsDistributor == msg.sender);
+        require(reward > DURATION);
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
@@ -256,14 +265,6 @@ contract Gumbar is ReentrancyGuard, Owned {
 
     function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor) external onlyOwner {
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
-    }
-
-    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
-    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
-        require(tokenAddress != address(stakingToken), "Cannot withdraw staking token");
-        require(rewardData[tokenAddress].lastUpdateTime == 0, "Cannot withdraw reward token");
-        IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
-        emit Recovered(tokenAddress, tokenAmount);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

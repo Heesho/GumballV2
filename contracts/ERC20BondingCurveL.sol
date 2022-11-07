@@ -65,7 +65,6 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
     // Events
 
-    event Burn(uint256 amount);
     event Buy(address indexed user, uint256 amount);
     event Sell(address indexed user, uint256 amount);
     event Borrow(address indexed user, uint256 amount);
@@ -366,7 +365,6 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     ////////////////////
 
     /** @dev Remove yield and rebalance */
-    // double check this function especially the borroedBase
     function syncReserves() internal {
         uint256 baseBalance = IERC20Upgradeable(BASE_TOKEN).balanceOf(address(this)) + borrowedTotalBASE;
         if(baseBalance > reserveRealBASE + treasuryBASE) {

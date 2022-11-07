@@ -33,7 +33,7 @@ let owner, admin, user1, user2, user3, artist, protocol;
 let GBT, XGBT, GNFT, weth, factory, USDC;
 let tokenLibrary, nftLibrary;
 
-describe("System Testing", function () {
+describe.only("Factory Testing", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");

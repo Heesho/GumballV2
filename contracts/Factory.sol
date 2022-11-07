@@ -9,6 +9,13 @@ import "./ERC20BondingCurveL.sol";
 import "./GumbarL.sol";
 import "./Gumball.sol";
 
+interface IGumbarL {
+  function addReward(address _rewardsToken, address _rewardsDistributor) external;
+  function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor) external;
+  function nominateNewOwner(address _owner) external;
+  function acceptOwnership() external;
+}
+
 contract Factory is Ownable, ReentrancyGuardUpgradeable {
 
   address public tokenLibraryAddress;
@@ -23,8 +30,7 @@ contract Factory is Ownable, ReentrancyGuardUpgradeable {
   event ProxiesDeployed(address tokenProxy, address gumballProxy, address gumbar, address tokenLibrary, address gumballLibrary);
   event UpdateTokenLibrary(address newLibraryAddress);
   event UpdateNftLibrary(address newLibraryAddress);
-  event ArtistWhitelistUpdated(address indexed artist, bool _bool);
-  event CollectionWhitelistUpdated(uint256 indexed _index, bool _bool);
+  event WhitelistExisting(uint256 index, bool _bool);
 
   constructor (address _tokenLibraryAddress, address _gumballLibraryAddress) {
     tokenLibraryAddress = _tokenLibraryAddress;
@@ -48,7 +54,7 @@ contract Factory is Ownable, ReentrancyGuardUpgradeable {
     address tokenClone = createProxy(tokenLibraryAddress);
     address gumballClone = createProxy(gumballLibraryAddress);
 
-    address gumbarAddr = address(deployGumbar(owner(), tokenClone, gumballClone, _baseToken));
+    address gumbarAddr = address(deployGumbar(address(this), tokenClone, gumballClone, _baseToken));
 
     ERC20BondingCurveL(tokenClone).initialize(
       name, 
@@ -114,15 +120,31 @@ contract Factory is Ownable, ReentrancyGuardUpgradeable {
 
   function addOrRemoveFactoryWhitelist(address _addr, bool _bool) external onlyOwner {
     whitelisted[_addr] = _bool;
-    emit ArtistWhitelistUpdated(_addr, _bool);
   }
 
   function whitelistExisting(uint256 _index, bool _bool) external onlyOwner {
     whitelist[_index] = _bool;
-    emit CollectionWhitelistUpdated(_index, _bool);
+
+    emit WhitelistExisting(_index, _bool);
   }
 
   function getOwner() public view returns (address) {
     return owner();
+  }
+
+  function addReward(address _gumbarAddr, address _rewardsToken, address _rewardsDistributor) external onlyOwner {
+    IGumbarL(_gumbarAddr).addReward(_rewardsToken, _rewardsDistributor);
+  }
+
+  function setRewardsDistributor(address _gumbarAddr, address _rewardsToken, address _rewardsDistributor) external onlyOwner {
+    IGumbarL(_gumbarAddr).setRewardsDistributor(_rewardsToken, _rewardsDistributor);
+  }
+
+  function nominateOwnerForGumbar(address _gumbarAddr, address _newOwner) external onlyOwner {
+    IGumbarL(_gumbarAddr).nominateNewOwner(_newOwner);
+  }
+
+  function acceptNewOwnershipForGumbar(address _gumbarAddr) external onlyOwner {
+    IGumbarL(_gumbarAddr).acceptOwnership();
   }
 }

@@ -17,7 +17,6 @@ library Math {
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
-
 }
 
 contract Owned {
@@ -91,6 +90,9 @@ contract GumbarL is ReentrancyGuard, Owned {
     mapping(address => uint256) public balanceToken; // Accounts deposited GBTs
     mapping(address => uint256[]) public balanceNFT; // Accounts deposited NFTs
 
+    uint256 public _totalToken;
+    uint256 public _totalNFT;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -112,13 +114,18 @@ contract GumbarL is ReentrancyGuard, Owned {
     )
         public
     {
-        require((msg.sender == owner || msg.sender == factory),"addReward: permission is denied!"); // maybe set to msg.sender == factory
+        require((msg.sender == owner),"addReward: permission is denied!");
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
+        isRewardToken[_rewardsToken] = true;
     } 
 
     /* ========== VIEWS ========== */
+
+    function balanceOfNFT(address user) external view returns (uint256 length, uint256[] memory arr) {
+        return (balanceNFT[user].length, balanceNFT[user]);
+    }
 
     function totalSupply() external view returns (uint256) {
         return _totalSupply;
@@ -147,10 +154,6 @@ contract GumbarL is ReentrancyGuard, Owned {
     function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
         return rewardData[_rewardsToken].rewardRate * DURATION;
     }
-    
-    function balanceOfNFT(address account) public view returns (uint256, uint256[] memory) {
-        return (balanceNFT[account].length, balanceNFT[account]);
-    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -158,11 +161,10 @@ contract GumbarL is ReentrancyGuard, Owned {
         return IERC721Receiver(address(this)).onERC721Received.selector;
     }
 
-    // can make deposit/withdraw internal to simplify
-
     function depositToken(uint256 amount) external nonReentrant updateReward(msg.sender) {
         address account = msg.sender;
         require(amount > 0, "Cannot deposit 0");
+        _totalToken += amount;
         _totalSupply = _totalSupply + amount;
         balanceToken[account] = balanceToken[account] + amount;
         _balances[account] = _balances[account] + amount;
@@ -174,6 +176,7 @@ contract GumbarL is ReentrancyGuard, Owned {
         address account = msg.sender;
         require(amount > 0, "Cannot withdraw 0");
         require(amount <= balanceToken[account], "Insufficient balance"); 
+        _totalToken -= amount;
         _totalSupply = _totalSupply - amount;
         balanceToken[account] = balanceToken[account] - amount;
         _balances[account] = _balances[account] - amount;
@@ -189,6 +192,7 @@ contract GumbarL is ReentrancyGuard, Owned {
         address account = msg.sender;
         require(_id.length > 0, "Cannot deposit 0");
         uint256 amount = _id.length * 1e18;
+        _totalNFT += amount;
         _totalSupply = _totalSupply + amount;
         _balances[account] = _balances[account] + amount;
 
@@ -197,7 +201,7 @@ contract GumbarL is ReentrancyGuard, Owned {
             IERC721(stakingNFT).safeTransferFrom(account, address(this), _id[i]);
         }
 
-        emit Deposited(account, amount);
+        emit DepositNFT(msg.sender, address(stakingNFT), _id);
     }
 
     /** @dev Remove Gumball(s) from the contract and leave staking
@@ -213,6 +217,7 @@ contract GumbarL is ReentrancyGuard, Owned {
             _pop(account, ind);
         }
 
+        _totalNFT -= amount;
         _totalSupply = _totalSupply - amount;
         _balances[account] = _balances[account] - amount;
         require(_balances[account] >= IERC20BondingCurve(address(stakingToken)).mustStayGBT(account), "Borrow debt");
@@ -221,7 +226,7 @@ contract GumbarL is ReentrancyGuard, Owned {
             IERC721(stakingNFT).safeTransferFrom(address(this), account, _id[i]);
         }
 
-        emit Withdrawn(account, amount);
+        emit WithdrawNFT(msg.sender, address(stakingNFT), _id);
     }
 
     function getReward() public nonReentrant updateReward(msg.sender) {
@@ -234,12 +239,14 @@ contract GumbarL is ReentrancyGuard, Owned {
                 emit RewardPaid(msg.sender, _rewardsToken, reward);
             }
         }
+        require(IERC20(stakingToken).balanceOf(address(this)) >= _totalToken);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external updateReward(address(0)) {
         require(rewardData[_rewardsToken].rewardsDistributor == msg.sender);
+        require(reward > DURATION);
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
@@ -260,14 +267,6 @@ contract GumbarL is ReentrancyGuard, Owned {
 
     function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor) external onlyOwner {
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
-    }
-
-    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
-    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
-        require(tokenAddress != address(stakingToken), "Cannot withdraw staking token");
-        require(rewardData[tokenAddress].lastUpdateTime == 0, "Cannot withdraw reward token");
-        IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
-        emit Recovered(tokenAddress, tokenAmount);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -326,6 +325,8 @@ contract GumbarL is ReentrancyGuard, Owned {
     event RewardAdded(uint256 reward);
     event Deposited(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
+    event DepositNFT(address indexed user, address colleciton, uint256[] id);
+    event WithdrawNFT(address indexed user, address collection, uint256[] id);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
     event Recovered(address token, uint256 amount);
 }
