@@ -7,7 +7,6 @@
 //  ╚██████╔╝╚██████╔╝██║ ╚═╝ ██║██████╔╝██║  ██║███████╗███████╗██╗██║     ██║
 //   ╚═════╝  ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝╚═╝     ╚═╝
                                                                                                                                                 
-
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -45,6 +44,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     address public artist;
     address public protocol;
     address public factory;
+    address public treasury;
 
     uint256 start;
     uint256 delay;
@@ -100,6 +100,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         delay = _delay;
         protocol = IFactory(msg.sender).getOwner();
         factory = msg.sender;
+        treasury = protocol;
 
         _mint(address(this), _supplyGBT);
     }
@@ -264,14 +265,14 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         IERC20Upgradeable(address(this)).approve(gumbar, _treasuryGBT * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
         IERC20Upgradeable(address(this)).safeTransfer(artist, _treasuryGBT * ARTIST / DIVISOR);
-        IERC20Upgradeable(address(this)).safeTransfer(protocol, _treasuryGBT * TREASURY / DIVISOR);
+        IERC20Upgradeable(address(this)).safeTransfer(treasury, _treasuryGBT * TREASURY / DIVISOR);
 
         // requires here
         IERC20Upgradeable(BASE_TOKEN).approve(gumbar, 0);
         IERC20Upgradeable(BASE_TOKEN).approve(gumbar, _treasuryBASE * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(BASE_TOKEN, _treasuryBASE * GUMBAR / DIVISOR);
         IERC20Upgradeable(BASE_TOKEN).safeTransfer(artist, _treasuryBASE * ARTIST / DIVISOR);
-        IERC20Upgradeable(BASE_TOKEN).safeTransfer(protocol, _treasuryBASE * TREASURY / DIVISOR);
+        IERC20Upgradeable(BASE_TOKEN).safeTransfer(treasury, _treasuryBASE * TREASURY / DIVISOR);
         IERC20Upgradeable(BASE_TOKEN).safeTransfer(msg.sender, reward);
 
         emit Skim(msg.sender);
@@ -360,6 +361,14 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
        emit UpdateOwnership(protocol);
     }
 
+    function setTreasury(address _treasuryAddr) external onlyProtocol() {
+        treasury = _treasuryAddr;
+    }
+
+    function changeArtist(address _newArtistAddr) external onlyArtist() {
+        artist = _newArtistAddr;
+    }
+
     ////////////////////
     ///// Internal /////
     ////////////////////
@@ -382,6 +391,11 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
  
     modifier onlyProtocol() {
         require(msg.sender == protocol, "!Authorized");
+        _;
+    }
+
+    modifier onlyArtist() {
+        require(msg.sender == artist, "!Authorized");
         _;
     }
 }

@@ -33,7 +33,7 @@ let owner, admin, user1, user2, user3, artist, protocol;
 let GBT, XGBT, GNFT, weth, factory, USDC;
 let tokenLibrary, nftLibrary;
 
-describe.only("Factory Testing", function () {
+describe("Factory Testing", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
@@ -80,7 +80,7 @@ describe.only("Factory Testing", function () {
         await factory.deployed();
         console.log("- Factory Initialized");
 
-        await factory.deployProxies('GBT1', 'GBT1', ['testuri', 'testURI'], '10000000000000000000000', '10000000000000000000000', weth.address, owner.address, 0)
+        await factory.deployProxies('GBT1', 'GBT1', ['testuri', 'testURI'], '10000000000000000000000', '10000000000000000000000', weth.address, artist.address, 0);
         
         // Attach contracts to first collection
         let array1 = await factory.deployInfo(0);
@@ -596,14 +596,24 @@ describe.only("Factory Testing", function () {
     it('Protocol transfers ownership to owner then transfer back', async function () {
         console.log("******************************************************");
 
-        await XGBT.connect(owner).nominateNewOwner(protocol.address);
-        await XGBT.connect(protocol).acceptOwnership();
-
-        await XGBT.connect(protocol).nominateNewOwner(owner.address);
+        // transfer gumbar ownership from factory to owner 
+        await factory.connect(owner).nominateOwnerForGumbar(XGBT.address, owner.address);
         await XGBT.connect(owner).acceptOwnership();
 
+        // transfer gumbar ownership from owner to factory 
+        await XGBT.connect(owner).nominateNewOwner(factory.address);
+        await factory.connect(owner).acceptNewOwnershipForGumbar(XGBT.address);
+
+        // owner of factory is owner of ERC20BondingCurve
         await GBT.updateOwnership();
         await expect(GBT.connect(user1).updateOwnership()).to.be.reverted;
+        await GBT.connect(owner).setTreasury(user1.address);
+        await expect(GBT.connect(user1).setTreasury(user2.address)).to.be.reverted;
+        await GBT.connect(owner).setTreasury(owner.address);
+
+        await expect(GBT.connect(owner).changeArtist(user1.address)).to.be.reverted;
+        await GBT.connect(artist).changeArtist(user1.address);
+        await GBT.connect(user1).changeArtist(artist.address);
 
     });
 
@@ -617,18 +627,19 @@ describe.only("Factory Testing", function () {
         await XGBT.lastTimeRewardApplicable(weth.address);
         await XGBT.rewardPerToken(weth.address);
 
-        await XGBT.connect(owner).setRewardsDistributor(weth.address, GBT.address);
+        await factory.connect(owner).setRewardsDistributor(XGBT.address, GBT.address, owner.address);
+        await expect(XGBT.connect(owner).setRewardsDistributor(GBT.address, GBT.address)).to.be.reverted;
+
+        await factory.connect(owner).nominateOwnerForGumbar(XGBT.address, owner.address);
+        await XGBT.connect(owner).acceptOwnership();
+
         await XGBT.connect(owner).setRewardsDistributor(GBT.address, GBT.address);
-        await expect(XGBT.connect(owner).recoverERC20(weth.address, one)).to.be.revertedWith("Cannot withdraw reward token");
 
-    });
+        await XGBT.connect(owner).nominateNewOwner(factory.address);
+        await factory.connect(owner).acceptNewOwnershipForGumbar(XGBT.address);
 
-    it('Owner sends USDC to gumbar', async function () {
-        console.log("******************************************************");
-
-        await USDC.connect(owner).transfer(XGBT.address, ten);
-        await expect(XGBT.connect(protocol).recoverERC20(USDC.address, ten)).to.be.reverted;
-        await XGBT.connect(owner).recoverERC20(USDC.address, ten);
+        await factory.connect(owner).addReward(XGBT.address, USDC.address, owner.address);
+        await expect(factory.connect(artist).addReward(XGBT.address, USDC.address, owner.address)).to.be.reverted;
 
     });
 

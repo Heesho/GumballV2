@@ -174,24 +174,6 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
         emit SetContractURI(uri);
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721URIStorage: URI query for nonexistent token");
-
-        string memory _tokenURI = Strings.toString(tokenId);
-        string memory base = baseTokenURI;
-
-        // If there is no base URI, return the token URI.
-        if (bytes(base).length == 0) {
-            return _tokenURI;
-        }
-        // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
-        if (bytes(_tokenURI).length > 0) {
-            return string(abi.encodePacked(base, _tokenURI));
-        }
-
-        return super.tokenURI(tokenId);
-    }
-
     //////////////////////
     ////// Internal //////
     //////////////////////

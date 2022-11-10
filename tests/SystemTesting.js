@@ -575,15 +575,6 @@ describe("System Testing", function () {
 
     });
 
-    it('Owner sends USDC to gumbar', async function () {
-        console.log("******************************************************");
-
-        await USDC.connect(owner).transfer(XGBT.address, ten);
-        await expect(XGBT.connect(owner).recoverERC20(USDC.address, ten)).to.be.reverted;
-        await XGBT.connect(protocol).recoverERC20(USDC.address, ten);
-
-    });
-
     it('Protocol transfers ownership to owner then transfer back', async function () {
         console.log("******************************************************");
 
@@ -607,8 +598,8 @@ describe("System Testing", function () {
         await GNFT.currentPrice();
         await GNFT.gumballs.length;
 
-        await GNFT.connect(protocol).setBaseURI("hello");
-        await GNFT.connect(protocol).setContractURI("hello");
+        await GNFT.connect(artist).setBaseURI("hello");
+        await GNFT.connect(artist).setContractURI("hello");
         await GNFT.tokenURI(0);
 
     });
@@ -625,7 +616,6 @@ describe("System Testing", function () {
 
         await XGBT.connect(protocol).setRewardsDistributor(weth.address, GBT.address);
         await XGBT.connect(protocol).setRewardsDistributor(GBT.address, GBT.address);
-        await expect(XGBT.connect(protocol).recoverERC20(weth.address, one)).to.be.revertedWith("Cannot withdraw reward token");
 
     });
 
@@ -664,6 +654,22 @@ describe("System Testing", function () {
 
         await network.provider.send('evm_increaseTime', [7*24*3600]); 
         await network.provider.send('evm_mine');
+
+    });
+
+    it('User1 Buys GBT with 50 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(GBT.address, fifty);
+        await GBT.connect(user1).buy(fifty, 1, 1682282187);
+
+    });
+
+    it('User1 sells rest of GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GBT.address, fifty);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
 
     });
 
