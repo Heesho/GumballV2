@@ -119,6 +119,8 @@ contract GumbarL is ReentrancyGuard, Owned {
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
         isRewardToken[_rewardsToken] = true;
+
+        emit RewardAdded(_rewardsToken, _rewardsDistributor);
     } 
 
     /* ========== VIEWS ========== */
@@ -198,7 +200,7 @@ contract GumbarL is ReentrancyGuard, Owned {
 
         for (uint256 i = 0; i < _id.length; i++) {
             balanceNFT[account].push(_id[i]);
-            IERC721(stakingNFT).safeTransferFrom(account, address(this), _id[i]);
+            IERC721(stakingNFT).transferFrom(account, address(this), _id[i]);
         }
 
         emit DepositNFT(msg.sender, address(stakingNFT), _id);
@@ -223,7 +225,7 @@ contract GumbarL is ReentrancyGuard, Owned {
         require(_balances[account] >= IERC20BondingCurve(address(stakingToken)).mustStayGBT(account), "Borrow debt");
 
         for (uint256 i = 0; i <_id.length; i++) {
-            IERC721(stakingNFT).safeTransferFrom(address(this), account, _id[i]);
+            IERC721(stakingNFT).transferFrom(address(this), account, _id[i]);
         }
 
         emit WithdrawNFT(msg.sender, address(stakingNFT), _id);
@@ -262,11 +264,12 @@ contract GumbarL is ReentrancyGuard, Owned {
 
         rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
         rewardData[_rewardsToken].periodFinish = block.timestamp + DURATION;
-        emit RewardAdded(reward);
+        emit RewardNotified(reward);
     }
 
     function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor) external onlyOwner {
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
+        emit DistributorSet(_rewardsToken, _rewardsDistributor);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -322,11 +325,12 @@ contract GumbarL is ReentrancyGuard, Owned {
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(uint256 reward);
+    event RewardNotified(uint256 reward);
     event Deposited(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event DepositNFT(address indexed user, address colleciton, uint256[] id);
     event WithdrawNFT(address indexed user, address collection, uint256[] id);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
-    event Recovered(address token, uint256 amount);
+    event RewardAdded(address reward, address distributor);
+    event DistributorSet(address reward, address distributor);
 }

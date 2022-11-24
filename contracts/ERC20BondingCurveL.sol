@@ -71,6 +71,8 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     event Repay(address indexed user, uint256 amount);
     event Skim(address indexed user);
     event UpdateOwnership(address newOwner);
+    event SetTreasury(address newTreasury);
+    event ChangeArtist(address newArtist);
 
     function initialize(
         string memory __name,
@@ -261,15 +263,15 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         treasuryGBT = 0;
 
         // requires here 
-        IERC20Upgradeable(address(this)).approve(gumbar, 0);
-        IERC20Upgradeable(address(this)).approve(gumbar, _treasuryGBT * GUMBAR / DIVISOR);
+        IERC20Upgradeable(address(this)).safeApprove(gumbar, 0);
+        IERC20Upgradeable(address(this)).safeApprove(gumbar, _treasuryGBT * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
         IERC20Upgradeable(address(this)).safeTransfer(artist, _treasuryGBT * ARTIST / DIVISOR);
         IERC20Upgradeable(address(this)).safeTransfer(treasury, _treasuryGBT * TREASURY / DIVISOR);
 
         // requires here
-        IERC20Upgradeable(BASE_TOKEN).approve(gumbar, 0);
-        IERC20Upgradeable(BASE_TOKEN).approve(gumbar, _treasuryBASE * GUMBAR / DIVISOR);
+        IERC20Upgradeable(BASE_TOKEN).safeApprove(gumbar, 0);
+        IERC20Upgradeable(BASE_TOKEN).safeApprove(gumbar, _treasuryBASE * GUMBAR / DIVISOR);
         IGumbar(gumbar).notifyRewardAmount(BASE_TOKEN, _treasuryBASE * GUMBAR / DIVISOR);
         IERC20Upgradeable(BASE_TOKEN).safeTransfer(artist, _treasuryBASE * ARTIST / DIVISOR);
         IERC20Upgradeable(BASE_TOKEN).safeTransfer(treasury, _treasuryBASE * TREASURY / DIVISOR);
@@ -357,16 +359,17 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
     function updateOwnership() external onlyProtocol() {
        protocol = IFactory(factory).getOwner();
-
        emit UpdateOwnership(protocol);
     }
 
     function setTreasury(address _treasuryAddr) external onlyProtocol() {
         treasury = _treasuryAddr;
+        emit SetTreasury(_treasuryAddr);
     }
 
     function changeArtist(address _newArtistAddr) external onlyArtist() {
         artist = _newArtistAddr;
+        emit ChangeArtist(_newArtistAddr);
     }
 
     ////////////////////
