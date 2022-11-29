@@ -31,6 +31,7 @@ contract Factory is Ownable, ReentrancyGuardUpgradeable {
   event UpdateTokenLibrary(address newLibraryAddress);
   event UpdateNftLibrary(address newLibraryAddress);
   event WhitelistExisting(uint256 index, bool _bool);
+  event FactoryWhitelistUpdate(address factory, bool flag);
 
   constructor (address _tokenLibraryAddress, address _gumballLibraryAddress) {
     tokenLibraryAddress = _tokenLibraryAddress;
@@ -102,8 +103,8 @@ contract Factory is Ownable, ReentrancyGuardUpgradeable {
     emit UpdateNftLibrary(_gumballLibraryAddress);
   }
 
-  function deployGumbar(address _token, address _nativeToken, address _gumball, address _baseToken) internal returns (address) {
-    GumbarL gumbar = new GumbarL(_token, _nativeToken, _gumball, _baseToken);
+  function deployGumbar(address _owner, address _nativeToken, address _gumball, address _baseToken) internal returns (address) {
+    GumbarL gumbar = new GumbarL(_owner, _nativeToken, _gumball, _baseToken);
     return address(gumbar);
   }
 
@@ -120,6 +121,8 @@ contract Factory is Ownable, ReentrancyGuardUpgradeable {
 
   function addOrRemoveFactoryWhitelist(address _addr, bool _bool) external onlyOwner {
     whitelisted[_addr] = _bool;
+    
+    emit FactoryWhitelistUpdate(_addr, _bool);
   }
 
   function whitelistExisting(uint256 _index, bool _bool) external onlyOwner {

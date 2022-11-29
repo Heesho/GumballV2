@@ -102,11 +102,11 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
             require(gumballIndex[id[i]] != -1, "Error");
             _pop(uint256(gumballIndex[id[i]]));
             gumballIndex[id[i]] = -1;
-            IERC721Upgradeable(address(this)).safeTransferFrom(address(this), msg.sender, id[i]);
+            IERC721Upgradeable(address(this)).transferFrom(address(this), msg.sender, id[i]);
         }
         
         IERC20Upgradeable(tokenContract).safeTransferFrom(msg.sender, address(this), enWei(id.length));
-        require(IERC20Upgradeable(tokenContract).balanceOf(address(this)) > before, "Bad Swap");
+        require(IERC20Upgradeable(tokenContract).balanceOf(address(this)) >= before + enWei(id.length), "Bad Swap");
 
         emit ExactSwap(msg.sender, id);
     }
@@ -125,7 +125,7 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
         for(uint256 i = 0; i < enETH(_amount); i++) {
             mint(msg.sender);
         }
-        require(IERC20Upgradeable(tokenContract).balanceOf(address(this)) > before, "Bad Swap");
+        require(IERC20Upgradeable(tokenContract).balanceOf(address(this)) >= before + _amount, "Bad Swap");
 
         emit Swap(msg.sender, _amount);
     }
@@ -148,7 +148,7 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
         IERC20Upgradeable(tokenContract).safeTransfer(tokenContract, burnAmount);
         IERC20Upgradeable(tokenContract).safeTransfer(msg.sender, enWei(_id.length) - burnAmount);
 
-        require(IERC721Upgradeable(address(this)).balanceOf(address(this)) > before, "Bad Swap");
+        require(IERC721Upgradeable(address(this)).balanceOf(address(this)) >= before + _id.length, "Bad Swap");
 
         emit Redeem(msg.sender, _id);
     }
