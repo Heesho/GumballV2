@@ -410,7 +410,7 @@ describe("System Testing", function () {
     it('User1 sells rest of GBT', async function () {
         console.log("******************************************************");
 
-        await GBT.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).approve(GBT.address, (await GBT.balanceOf(user1.address)).sub(two));
         await GBT.connect(user1).sell((await GBT.balanceOf(user1.address)).sub(two), 1, 1682282187);
 
     });
