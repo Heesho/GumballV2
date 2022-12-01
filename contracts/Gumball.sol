@@ -153,6 +153,10 @@ contract Gumball is Initializable, ERC721EnumerableUpgradeable, ReentrancyGuardU
         emit Redeem(msg.sender, _id);
     }
 
+    function _baseURI() internal view virtual override returns (string memory) {
+        return baseTokenURI;
+    }
+
     /** @dev Allows the protocol to set {baseURI} 
       * @param uri is the updated URI
     */
