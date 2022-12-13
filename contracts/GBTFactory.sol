@@ -1,31 +1,22 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.11;
 
-//   ██████╗ ██╗   ██╗███╗   ███╗██████╗  █████╗ ██╗     ██╗        ███████╗██╗
-//  ██╔════╝ ██║   ██║████╗ ████║██╔══██╗██╔══██╗██║     ██║        ██╔════╝██║
-//  ██║  ███╗██║   ██║██╔████╔██║██████╔╝███████║██║     ██║        █████╗  ██║
-//  ██║   ██║██║   ██║██║╚██╔╝██║██╔══██╗██╔══██║██║     ██║        ██╔══╝  ██║
-//  ╚██████╔╝╚██████╔╝██║ ╚═╝ ██║██████╔╝██║  ██║███████╗███████╗██╗██║     ██║
-//   ╚═════╝  ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝╚═╝     ╚═╝
-                                                                                                                                                
-pragma solidity ^0.8.4;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-
-interface IFactory {
-    function getOwner() external view returns (address);
+interface IGumBallFactory {
+    function getTreasury() external view returns (address);
 }
 
-interface IGumbar {
+interface IXGBT {
     function balanceOf(address account) external view returns (uint256);
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external; 
 }
 
-contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+contract GBT is ERC20, ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
     // Bonding Curve Variables
     address public BASE_TOKEN;
@@ -33,21 +24,27 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     uint256 public reserveVirtualBASE;
     uint256 public reserveRealBASE;
     uint256 public reserveGBT;
-
+    
     uint256 public initial_totalSupply;
 
+    // Treasury Variables
     uint256 public treasuryBASE;
     uint256 public treasuryGBT;
 
-    address public gumball;
-    address public gumbar;
+    // Addresses
+    address public XGBT;
     address public artist;
-    address public protocol;
     address public factory;
-    address public treasury;
 
+    // Allowlist Variables
+    mapping(address => bool) public allowlist;
+    mapping(address => uint256) public limit;
     uint256 start;
     uint256 delay;
+
+    // Borrow Variables
+    uint256 public borrowedTotalBASE;
+    mapping(address => uint256) public borrowedBASE;
 
     // Fee
     uint256 constant PROTOCOL = 25;
@@ -56,15 +53,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     uint256 constant ARTIST = 400;
     uint256 constant DIVISOR = 1000;
 
-    // Borrow Variables
-    uint256 public borrowedTotalBASE;
-
-    mapping(address => uint256) public borrowedBASE;
-    mapping(address => bool) public whitelist;
-    mapping(address => uint256) public limit;
-
     // Events
-
     event Buy(address indexed user, uint256 amount);
     event Sell(address indexed user, uint256 amount);
     event Borrow(address indexed user, uint256 amount);
@@ -74,23 +63,20 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     event SetTreasury(address newTreasury);
     event ChangeArtist(address newArtist);
 
-    function initialize(
-        string memory __name,
-        string memory __symbol,
+    constructor(
+        string memory _name,
+        string memory _symbol,
         address _baseToken,
         uint256 _initialVirtualBASE,
         uint256 _supplyGBT,
-        address _gumball,
-        address _gumbar,
         address _artist,
+        address _factory,
         uint256 _delay
-    ) public initializer {
-        __ERC20_init(__name, __symbol);
+        ) ERC20(_name, _symbol) {
 
         BASE_TOKEN = _baseToken;
-        gumball = _gumball;
-        gumbar = _gumbar;
         artist = _artist;
+        factory = _factory;
 
         reserveVirtualBASE = _initialVirtualBASE;
 
@@ -100,11 +86,9 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
         start = block.timestamp;
         delay = _delay;
-        protocol = IFactory(msg.sender).getOwner();
-        factory = msg.sender;
-        treasury = protocol;
 
         _mint(address(this), _supplyGBT);
+
     }
 
     //////////////////
@@ -118,7 +102,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
     /** @dev returns the allowance @param user can borrow */
     function borrowCredit(address account) public view returns (uint256) {
-        uint256 borrowPowerGBT = IGumbar(gumbar).balanceOf(account);
+        uint256 borrowPowerGBT = IXGBT(XGBT).balanceOf(account);
         if (borrowPowerGBT == 0) {
             return 0;
         }
@@ -137,19 +121,15 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
     }
 
     function baseBal() public view returns (uint256) {
-        return IERC20Upgradeable(BASE_TOKEN).balanceOf(address(this));
+        return IERC20(BASE_TOKEN).balanceOf(address(this));
     }
 
     function gbtBal() public view returns (uint256) {
-        return IERC20Upgradeable(address(this)).balanceOf(address(this));
+        return IERC20(address(this)).balanceOf(address(this));
     }
 
-    function getProtocol() public view returns (address) {
-        return protocol;
-    }
-
-    function getGumball() public view returns (address) {
-        return gumball;
+    function getFactory() public view returns (address) {
+        return factory;
     }
 
     function initSupply() public view returns (uint256) {
@@ -168,7 +148,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         uint256 amount = totalSupply() - (reserveVirtualBASE * totalSupply() / (accountBorrowedBASE + reserveVirtualBASE));
         return amount;
     }
- 
+
     ////////////////////
     ///// External /////
     ////////////////////
@@ -183,7 +163,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
       *     2. the whitelisted user cannont buy more than 1 GBT until the delay has elapsed
     */
     function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp) public nonReentrant {
-        require(start + delay <= block.timestamp || whitelist[msg.sender], "Market Closed");
+        require(start + delay <= block.timestamp || allowlist[msg.sender], "Market Closed");
         require(expireTimestamp == 0 || expireTimestamp > block.timestamp, "Expired");
 
         address account = msg.sender;
@@ -203,16 +183,16 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         require(outGBT > _minGBT, "Less than Min");
 
         if (start + delay >= block.timestamp) {
-            require(outGBT <= 10e18 && limit[account] <= 10e18, "Over whitelist limit");
+            require(outGBT <= 10e18 && limit[account] <= 10e18, "Over allowlist limit");
             limit[account] += outGBT;
-            require(limit[account] <= 10e18, "Whitelist amount overflow");
+            require(limit[account] <= 10e18, "Allowlist amount overflow");
         }
 
         reserveRealBASE = newReserveBASE - reserveVirtualBASE;
         reserveGBT = newReserveGBT;
 
-        IERC20Upgradeable(BASE_TOKEN).safeTransferFrom(account, address(this), _amountBASE);
-        IERC20Upgradeable(address(this)).safeTransfer(account, outGBT);
+        IERC20(BASE_TOKEN).safeTransferFrom(account, address(this), _amountBASE);
+        IERC20(address(this)).safeTransfer(account, outGBT);
 
         emit Buy(account, _amountBASE);
     }
@@ -244,8 +224,8 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         reserveRealBASE = newReserveBASE - reserveVirtualBASE;
         reserveGBT = newReserveGBT;
 
-        IERC20Upgradeable(address(this)).safeTransferFrom(account, address(this), _amountGBT);
-        IERC20Upgradeable(BASE_TOKEN).safeTransfer(account, outBASE);
+        IERC20(address(this)).safeTransferFrom(account, address(this), _amountGBT);
+        IERC20(BASE_TOKEN).safeTransfer(account, outBASE);
 
         emit Sell(account, _amountGBT);
     }
@@ -262,20 +242,22 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         treasuryBASE = 0;
         treasuryGBT = 0;
 
+        address treasury = IGumBallFactory(factory).getTreasury();
+
         // requires here 
-        IERC20Upgradeable(address(this)).safeApprove(gumbar, 0);
-        IERC20Upgradeable(address(this)).safeApprove(gumbar, _treasuryGBT * GUMBAR / DIVISOR);
-        IGumbar(gumbar).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
-        IERC20Upgradeable(address(this)).safeTransfer(artist, _treasuryGBT * ARTIST / DIVISOR);
-        IERC20Upgradeable(address(this)).safeTransfer(treasury, _treasuryGBT * TREASURY / DIVISOR);
+        IERC20(address(this)).safeApprove(XGBT, 0);
+        IERC20(address(this)).safeApprove(XGBT, _treasuryGBT * GUMBAR / DIVISOR);
+        IXGBT(XGBT).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
+        IERC20(address(this)).safeTransfer(artist, _treasuryGBT * ARTIST / DIVISOR);
+        IERC20(address(this)).safeTransfer(treasury, _treasuryGBT * TREASURY / DIVISOR);
 
         // requires here
-        IERC20Upgradeable(BASE_TOKEN).safeApprove(gumbar, 0);
-        IERC20Upgradeable(BASE_TOKEN).safeApprove(gumbar, _treasuryBASE * GUMBAR / DIVISOR);
-        IGumbar(gumbar).notifyRewardAmount(BASE_TOKEN, _treasuryBASE * GUMBAR / DIVISOR);
-        IERC20Upgradeable(BASE_TOKEN).safeTransfer(artist, _treasuryBASE * ARTIST / DIVISOR);
-        IERC20Upgradeable(BASE_TOKEN).safeTransfer(treasury, _treasuryBASE * TREASURY / DIVISOR);
-        IERC20Upgradeable(BASE_TOKEN).safeTransfer(msg.sender, reward);
+        IERC20(BASE_TOKEN).safeApprove(XGBT, 0);
+        IERC20(BASE_TOKEN).safeApprove(XGBT, _treasuryBASE * GUMBAR / DIVISOR);
+        IXGBT(XGBT).notifyRewardAmount(BASE_TOKEN, _treasuryBASE * GUMBAR / DIVISOR);
+        IERC20(BASE_TOKEN).safeTransfer(artist, _treasuryBASE * ARTIST / DIVISOR);
+        IERC20(BASE_TOKEN).safeTransfer(treasury, _treasuryBASE * TREASURY / DIVISOR);
+        IERC20(BASE_TOKEN).safeTransfer(msg.sender, reward);
 
         emit Skim(msg.sender);
     }
@@ -286,7 +268,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
         address account = msg.sender;
 
-        uint256 borrowPowerGBT = IGumbar(gumbar).balanceOf(account);
+        uint256 borrowPowerGBT = IXGBT(XGBT).balanceOf(account);
 
         uint256 borrowTotalBASE = (reserveVirtualBASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - reserveVirtualBASE;
         uint256 borrowableBASE = borrowTotalBASE - borrowedBASE[account];
@@ -296,7 +278,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         borrowedBASE[account] += _amount;
         borrowedTotalBASE += _amount;
 
-        IERC20Upgradeable(BASE_TOKEN).safeTransfer(account, _amount);
+        IERC20(BASE_TOKEN).safeTransfer(account, _amount);
 
         emit Borrow(account, _amount);
     }
@@ -306,7 +288,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
         address account = msg.sender;
 
-        uint256 borrowPowerGBT = IGumbar(gumbar).balanceOf(account);
+        uint256 borrowPowerGBT = IXGBT(XGBT).balanceOf(account);
 
         uint256 borrowTotalBASE = (reserveVirtualBASE * totalSupply() / (totalSupply() - borrowPowerGBT)) - reserveVirtualBASE;
         uint256 borrowableBASE = borrowTotalBASE - borrowedBASE[account];
@@ -314,7 +296,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         borrowedBASE[account] += borrowableBASE;
         borrowedTotalBASE += borrowableBASE;
 
-        IERC20Upgradeable(BASE_TOKEN).safeTransfer(account, borrowableBASE);
+        IERC20(BASE_TOKEN).safeTransfer(account, borrowableBASE);
 
         emit Borrow(account, borrowableBASE);
     }
@@ -328,7 +310,7 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         borrowedBASE[account] -= _amount;
         borrowedTotalBASE -= _amount;
 
-        IERC20Upgradeable(BASE_TOKEN).safeTransferFrom(account, address(this), _amount);
+        IERC20(BASE_TOKEN).safeTransferFrom(account, address(this), _amount);
 
         emit Repay(account, _amount);
     }
@@ -342,34 +324,9 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
         borrowedBASE[account] = 0;
         borrowedTotalBASE -= amountRepayBASE;
 
-        IERC20Upgradeable(BASE_TOKEN).safeTransferFrom(account, address(this), amountRepayBASE);
+        IERC20(BASE_TOKEN).safeTransferFrom(account, address(this), amountRepayBASE);
 
         emit Repay(account, amountRepayBASE);
-    }
-
-    /** @dev Protocol function to add or remove users from whitelist 
-      * @param accounts is the address added/removed
-      * @param _bool is true/false
-    */
-    function _whitelist(address[] memory accounts, bool _bool) external onlyProtocol() {
-        for (uint256 i = 0; i < accounts.length; i++) {
-            whitelist[accounts[i]] = _bool;
-        }
-    }
-
-    function updateOwnership() external onlyProtocol() {
-       protocol = IFactory(factory).getOwner();
-       emit UpdateOwnership(protocol);
-    }
-
-    function setTreasury(address _treasuryAddr) external onlyProtocol() {
-        treasury = _treasuryAddr;
-        emit SetTreasury(_treasuryAddr);
-    }
-
-    function changeArtist(address _newArtistAddr) external onlyArtist() {
-        artist = _newArtistAddr;
-        emit ChangeArtist(_newArtistAddr);
     }
 
     ////////////////////
@@ -378,27 +335,65 @@ contract ERC20BondingCurveL is ERC20Upgradeable, ReentrancyGuardUpgradeable {
 
     /** @dev Remove yield and rebalance */
     function syncReserves() internal {
-        uint256 baseBalance = IERC20Upgradeable(BASE_TOKEN).balanceOf(address(this)) + borrowedTotalBASE;
+        uint256 baseBalance = IERC20(BASE_TOKEN).balanceOf(address(this)) + borrowedTotalBASE;
         if(baseBalance > reserveRealBASE + treasuryBASE) {
             treasuryBASE += (baseBalance - reserveRealBASE - treasuryBASE);
         }
-        uint256 gbtBalance = IERC20Upgradeable(address(this)).balanceOf(address(this));
+        uint256 gbtBalance = IERC20(address(this)).balanceOf(address(this));
         if (gbtBalance > reserveGBT + treasuryGBT) {
             treasuryGBT += (gbtBalance - reserveGBT - treasuryGBT);
         }
     }
 
     ////////////////////
-    ///// Modifier /////
+    //// Restricted ////
     ////////////////////
- 
-    modifier onlyProtocol() {
-        require(msg.sender == protocol, "!Authorized");
-        _;
+
+    function updateAllowlist(address[] memory accounts, bool _bool) external {
+        require(msg.sender == factory || msg.sender == artist, "!AUTH");
+        for (uint256 i = 0; i < accounts.length; i++) {
+            allowlist[accounts[i]] = _bool;
+        }
     }
 
-    modifier onlyArtist() {
-        require(msg.sender == artist, "!Authorized");
-        _;
+    function setXGBT(address _XGBT) external {
+        require(msg.sender == factory, "!AUTH");
+        XGBT = _XGBT;
+    }
+
+    function setArtist(address _artist) external {
+        require(msg.sender == artist, "!AUTH");
+        artist = _artist;
+    }
+    
+}
+
+contract GBTFactory {
+    address public factory;
+    address public lastGBT;
+
+    constructor() {
+        factory = msg.sender;
+    }
+
+    function setFactory(address _factory) external {
+        require(msg.sender == factory, "!AUTH");
+        factory = _factory;
+    }
+
+    function createGBT(
+        string memory _name,
+        string memory _symbol,
+        address _baseToken,
+        uint256 _initialVirtualBASE,
+        uint256 _supplyGBT,
+        address _artist,
+        address _factory,
+        uint256 _delay
+    ) external returns (address) {
+        require(msg.sender == factory, "!AUTH");
+        GBT newGBT = new GBT(_name, _symbol, _baseToken, _initialVirtualBASE, _supplyGBT, _artist, _factory, _delay);
+        lastGBT = address(newGBT);
+        return lastGBT;
     }
 }

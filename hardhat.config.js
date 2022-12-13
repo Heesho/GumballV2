@@ -8,16 +8,10 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: '0.6.12'
-      },
-      {
-        version: '0.8.0'
-      },
-      {
-        version: '0.8.4'
-      },
-      {
         version: '0.8.11'
+      },
+      {
+        version: '0.8.13'
       }
     ],
     settings: {
@@ -27,8 +21,8 @@ module.exports = {
       },
     },
     overrides: {
-      "contracts/ERC20BondingCurve.sol": {
-        version: "0.8.4",
+      "contracts/GNFTFactory.sol": {
+        version: "0.8.13",
         settings: {
           optimizer: {
             enabled: true,
@@ -36,8 +30,8 @@ module.exports = {
           },
         }
       },
-      "contracts/ERC20BondingCurveL.sol": {
-        version: "0.8.4",
+      "contracts/GBTFactory.sol": {
+        version: "0.8.13",
         settings: {
           optimizer: {
             enabled: true,
@@ -45,8 +39,17 @@ module.exports = {
           },
         }
       },
-      "contracts/Factory.sol": {
-        version: "0.8.11",
+      "contracts/XGBTFactory.sol": {
+        version: "0.8.13",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,
+          },
+        }
+      },
+      "contracts/GumBallFactory.sol": {
+        version: "0.8.13",
         settings: {
           optimizer: {
             enabled: true,

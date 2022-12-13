@@ -29,67 +29,61 @@ const startBlock = "1";
 const startTime = Math.floor(Date.now() / 1000);
 
 // users
-let owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball;
-let weth, GBT, XGBT, GNFT, USDC;
+let owner, admin, user1, user2, user3, artist, protocol;
+let weth, USDC;
+let gbtFactory, gnftFactory, xgbtFactory, factory;
+let GBT, GNFT, XGBT;
 
-describe("System Testing 3", function () {
+describe("SystemTesting3", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
 
         // initialize users
-        [owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball] = await ethers.getSigners();
+        [owner, admin, user1, user2, user3, artist, protocol] = await ethers.getSigners();
 
         // initialize tokens
         // mints 1000 tokens to deployer
-        const erc20Mock = await ethers.getContractFactory("ERC20Mock");
-        weth = await erc20Mock.deploy("WETH", "WETH");
-        USDC = await erc20Mock.deploy("USDC", "USDC")
+        const ETHContract = await ethers.getContractFactory("ERC20Mock");
+        weth = await ETHContract.deploy("ETH", "ETH");
+        USDC = await ETHContract.deploy("ETH", "ETH");
+        await weth.deployed();
         await weth.mint(user1.address, oneThousand);
         await weth.mint(user2.address, oneThousand);
         await weth.mint(user3.address, oneThousand);
         console.log("- Tokens Initialized");
 
-        // initialize ERC20BondingCurve
-        const GBTArtifact = await ethers.getContractFactory("ERC20BondingCurve");
-        const GBTContract = await GBTArtifact.deploy();
-        GBT = await ethers.getContractAt("ERC20BondingCurve", GBTContract.address);
-        console.log("- ER20 Bonding Curve Initialized");
+        const GBTFactory = await ethers.getContractFactory("GBTFactory");
+        gbtFactory = await GBTFactory.deploy();
+        await gbtFactory.deployed();
+        console.log("- GBTFactory Initialized");
 
-        await GBT.initialize('GumBall Token 1', 
-                             'GBT1',
-                             weth.address,
-                             oneHundred,
-                             oneHundred,
-                             gumball.address,
-                             gumbar.address,
-                             artist.address,
-                             protocol.address,
-                             0
-                             );
+        const GNFTFactory = await ethers.getContractFactory("GNFTFactory");
+        gnftFactory = await GNFTFactory.deploy();
+        await gnftFactory.deployed();
+        console.log("- GNFTFactory Initialized");
 
-        const GNFTArtifact = await ethers.getContractFactory("Gumball");
-        const GNFTContract = await GNFTArtifact.deploy();
-        GNFT = await ethers.getContractAt("Gumball", GNFTContract.address);
+        const XGBTFactory = await ethers.getContractFactory("XGBTFactory");
+        xgbtFactory = await XGBTFactory.deploy();
+        await xgbtFactory.deployed();
+        console.log("- XGBTFactory Initialized");
 
-        await GNFT.initialize("Gumball Collection 1",
-                            "GBT1",
-                            ["http", ""],
-                            GBT.address
-                            );
+        const GumBallFactory = await ethers.getContractFactory("GumBallFactory");
+        factory = await GumBallFactory.deploy(gbtFactory.address, gnftFactory.address, xgbtFactory.address, protocol.address);
+        await factory.deployed();
+        console.log("- GumBallFactory Initialized");
 
+        await gbtFactory.connect(owner).setFactory(factory.address);
+        await gnftFactory.connect(owner).setFactory(factory.address);
+        await xgbtFactory.connect(owner).setFactory(factory.address);
 
-        console.log("- Gumball Initialized");
+        await factory.deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 0, 100);
+        let GumBallData = await factory.deployInfo(0);
+        GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
+        GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
+        XGBT = await ethers.getContractAt("contracts/XGBTFactory.sol:XGBT", GumBallData[2]);
+        console.log("- GumBall Initialized");
 
-        // initialize Gumbar 
-        const XGBTArtifact = await ethers.getContractFactory("Gumbar");
-        const XGBTContract = await XGBTArtifact.deploy(protocol.address, GBT.address, GNFT.address);
-        XGBT = await ethers.getContractAt("Gumbar", XGBTContract.address);
-        await GBT.setGumbar(XGBT.address);
-        await XGBT.connect(protocol).addReward(GBT.address, GBT.address);
-        await XGBT.connect(protocol).addReward(weth.address, GBT.address);
-        console.log("- Gumbar Initialized");
-        
         console.log("Initialization Complete");
         console.log("******************************************************");
     });
@@ -528,19 +522,19 @@ describe("System Testing 3", function () {
 
     });
 
+
     it('System Status', async function () {
         console.log("******************************************************");
 
         let reserveVirtualETH = await GBT.reserveVirtualBASE();
         let reserveRealETH = await GBT.reserveRealBASE();
         let balanceETH = await weth.balanceOf(GBT.address);
-        let reserveGBT = await GBT.reserveGBT()
         let balanceGBT = await GBT.balanceOf(GBT.address);
+        let reserveGBT = await GBT.reserveGBT()
         let totalSupplyGBT = await GBT.totalSupply();
         let borrowedTotalETH = await GBT.borrowedTotalBASE();
 
-        let gumbarGBT = await GBT.balanceOf(XGBT.address);
-        let gumbarStakedGBT = await XGBT.totalSupply();
+        let gumbarGBT = await XGBT.totalSupply();
         let rFDGBT = await XGBT.getRewardForDuration(GBT.address);
         let rFDETH = await XGBT.getRewardForDuration(weth.address);
 
@@ -580,10 +574,6 @@ describe("System Testing 3", function () {
         let user3BorrowedETH = await GBT.borrowedBASE(user3.address);
         let user3MustStayGBT = await GBT.mustStayGBT(user3.address);
 
-        // invariants
-        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
-        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
-
         console.log("BONDING CURVE RESERVES");
         console.log("GBT Reserve", divDec(reserveGBT));
         console.log("vETH Reserve", divDec(reserveVirtualETH));
@@ -592,13 +582,11 @@ describe("System Testing 3", function () {
         console.log("ETH Treasury", divDec(treasuryETH));
         console.log("ETH Borrowed", divDec(borrowedTotalETH));
         console.log("ETH Balance", divDec(balanceETH));
-        console.log("GBT Balance", divDec(balanceGBT));
         console.log("GBT Total Supply", divDec(totalSupplyGBT));
         console.log();
 
         console.log("GUMBAR");
-        console.log("GBT", divDec(gumbarGBT));
-        console.log("GBT Staked", divDec(gumbarStakedGBT));
+        console.log("GBT Staked", divDec(gumbarGBT));
         console.log("GBT reward for duration", divDec(rFDGBT));
         console.log("ETH reward for duration", divDec(rFDETH));
         console.log();
@@ -651,6 +639,10 @@ describe("System Testing 3", function () {
         console.log("Borrowed ETH", divDec(user3BorrowedETH));
         console.log("Must Stay GBT", divDec(user3MustStayGBT));
         console.log();
+
+        // invariants
+        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
+        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
 
     });
 

@@ -30,10 +30,11 @@ const startTime = Math.floor(Date.now() / 1000);
 
 // users
 let owner, admin, user1, user2, user3, artist, protocol;
-let GBT, XGBT, GNFT, weth, factory, USDC;
-let tokenLibrary, nftLibrary;
+let weth, USDC;
+let gbtFactory, gnftFactory, xgbtFactory, factory;
+let GBT, GNFT, XGBT;
 
-describe("Factory Testing", function () {
+describe("SystemTesting0", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
@@ -52,42 +53,36 @@ describe("Factory Testing", function () {
         await weth.mint(user3.address, oneThousand);
         console.log("- Tokens Initialized");
 
-        // initialize ERC20BondingCurve
+        const GBTFactory = await ethers.getContractFactory("GBTFactory");
+        gbtFactory = await GBTFactory.deploy();
+        await gbtFactory.deployed();
+        console.log("- GBTFactory Initialized");
 
-        const TokenLibrary = await ethers.getContractFactory("ERC20BondingCurveL");
-        tokenLibrary = await TokenLibrary.deploy();
-        await tokenLibrary.deployed();
-        console.log("- ERC20 Bonding Curve Library Initialized");
+        const GNFTFactory = await ethers.getContractFactory("GNFTFactory");
+        gnftFactory = await GNFTFactory.deploy();
+        await gnftFactory.deployed();
+        console.log("- GNFTFactory Initialized");
 
-        // initialize Gumbar 
+        const XGBTFactory = await ethers.getContractFactory("XGBTFactory");
+        xgbtFactory = await XGBTFactory.deploy();
+        await xgbtFactory.deployed();
+        console.log("- XGBTFactory Initialized");
 
-        const GUMBAR = await ethers.getContractFactory("GumbarL");
-        const gumbar = await GUMBAR.deploy(owner.address, owner.address, owner.address, weth.address);
-        await gumbar.deployed();
-        console.log("- Gumbar Library Initialized");
-
-        // initialize Gumball
-
-        const NFTLibrary = await ethers.getContractFactory('Gumball');
-        nftLibrary = await NFTLibrary.deploy();
-        await nftLibrary.deployed();
-        console.log("- Gumball Library Initialized");
-
-        // initialize factory
-
-        const Factory = await ethers.getContractFactory('Factory');
-        factory = await Factory.deploy(tokenLibrary.address, nftLibrary.address);
+        const GumBallFactory = await ethers.getContractFactory("GumBallFactory");
+        factory = await GumBallFactory.deploy(gbtFactory.address, gnftFactory.address, xgbtFactory.address, protocol.address);
         await factory.deployed();
-        console.log("- Factory Initialized");
+        console.log("- GumBallFactory Initialized");
 
-        await factory.deployProxies('GBT1', 'GBT1', ['testuri', 'testURI'], '10000000000000000000000', '10000000000000000000000', weth.address, artist.address, 0);
-        
-        // Attach contracts to first collection
-        let array1 = await factory.deployInfo(0);
-        GBT = tokenLibrary.attach(array1[0]);
-        GNFT = nftLibrary.attach(array1[1]);
-        XGBT = gumbar.attach(await GBT.gumbar());
-        console.log("- Collection1 Initialized");
+        await gbtFactory.connect(owner).setFactory(factory.address);
+        await gnftFactory.connect(owner).setFactory(factory.address);
+        await xgbtFactory.connect(owner).setFactory(factory.address);
+
+        await factory.deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 0, 100);
+        let GumBallData = await factory.deployInfo(0);
+        GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
+        GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
+        XGBT = await ethers.getContractAt("contracts/XGBTFactory.sol:XGBT", GumBallData[2]);
+        console.log("- GumBall Initialized");
 
         console.log("Initialization Complete");
         console.log("******************************************************");
@@ -117,7 +112,6 @@ describe("Factory Testing", function () {
 
     });
 
-    
     it('User1 sells rest of GBT', async function () {
         console.log("******************************************************");
 
@@ -583,37 +577,41 @@ describe("Factory Testing", function () {
 
     });
 
+    it('User2 repays some eth back', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user2).approve(GBT.address, oneHundred);
+        await GBT.connect(user2).repayMax();
+
+    });
+
+    it('User2 unstakes max GBT', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user2).withdrawToken((await XGBT.balanceOf(user2.address)).sub(await GBT.mustStayGBT(user2.address)));
+
+    });
+
+    it('Owner sends ETH to bonding curve', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(owner).transfer(GBT.address, ten);
+
+    });
+
+    it('User1 Buys GBT with 10 WETH', async function () {
+        console.log("******************************************************");
+
+        await weth.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).buy(ten, 1, 1682282187);
+
+    });
+
     it('Owners', async function () {
         console.log("******************************************************");
 
         console.log("Owner Address", owner.address);
         console.log("Factory Address", factory.address);
-        console.log("GBT Owner Address", await GBT.protocol());
-        console.log("XGBT Owner Address", await XGBT.owner());
-
-    });
-
-    it('Protocol transfers ownership to owner then transfer back', async function () {
-        console.log("******************************************************");
-
-        // transfer gumbar ownership from factory to owner 
-        await factory.connect(owner).nominateOwnerForGumbar(XGBT.address, owner.address);
-        await XGBT.connect(owner).acceptOwnership();
-
-        // transfer gumbar ownership from owner to factory 
-        await XGBT.connect(owner).nominateNewOwner(factory.address);
-        await factory.connect(owner).acceptNewOwnershipForGumbar(XGBT.address);
-
-        // owner of factory is owner of ERC20BondingCurve
-        await GBT.updateOwnership();
-        await expect(GBT.connect(user1).updateOwnership()).to.be.reverted;
-        await GBT.connect(owner).setTreasury(user1.address);
-        await expect(GBT.connect(user1).setTreasury(user2.address)).to.be.reverted;
-        await GBT.connect(owner).setTreasury(owner.address);
-
-        await expect(GBT.connect(owner).changeArtist(user1.address)).to.be.reverted;
-        await GBT.connect(artist).changeArtist(user1.address);
-        await GBT.connect(user1).changeArtist(artist.address);
 
     });
 
@@ -626,20 +624,7 @@ describe("Factory Testing", function () {
         await XGBT.balanceOf(user1.address);
         await XGBT.lastTimeRewardApplicable(weth.address);
         await XGBT.rewardPerToken(weth.address);
-
-        await factory.connect(owner).setRewardsDistributor(XGBT.address, GBT.address, owner.address);
-        await expect(XGBT.connect(owner).setRewardsDistributor(GBT.address, GBT.address)).to.be.reverted;
-
-        await factory.connect(owner).nominateOwnerForGumbar(XGBT.address, owner.address);
-        await XGBT.connect(owner).acceptOwnership();
-
-        await XGBT.connect(owner).setRewardsDistributor(GBT.address, GBT.address);
-
-        await XGBT.connect(owner).nominateNewOwner(factory.address);
-        await factory.connect(owner).acceptNewOwnershipForGumbar(XGBT.address);
-
-        await factory.connect(owner).addReward(XGBT.address, USDC.address, owner.address);
-        await expect(factory.connect(artist).addReward(XGBT.address, USDC.address, owner.address)).to.be.reverted;
+        await XGBT.balanceOfNFT(user1.address);
 
     });
 
@@ -653,10 +638,8 @@ describe("Factory Testing", function () {
         await GBT.initial_totalSupply();
         await GBT.treasuryBASE();
         await GBT.treasuryGBT();
-        await GBT.gumball();
-        await GBT.gumbar();
+        await GBT.XGBT();
         await GBT.artist();
-        await GBT.protocol();
         await GBT.factory();
 
         await GBT.borrowedTotalBASE();
@@ -667,20 +650,73 @@ describe("Factory Testing", function () {
         await GBT.debt(user1.address);
         await GBT.baseBal();
         await GBT.gbtBal();
-        await GBT.getProtocol();
-        await GBT.getGumball();
         await GBT.initSupply();
+        await GBT.getFactory();
+        await GBT.floorPrice();
+        await GBT.borrowCredit(user2.address);
+
+    });
+
+    it('Artist sets new artist', async function () {
+        console.log("******************************************************");
+
+        await expect(GBT.connect(owner).setArtist(owner.address)).to.be.revertedWith("!AUTH");
+        await GBT.connect(artist).setArtist(owner.address);
+        await GBT.connect(owner).setArtist(artist.address);
+
+    });
+
+    it('GNFT Coverage Testing', async function () {
+        console.log("******************************************************");
+        await GNFT.owner();
+        await GNFT.tokenBal();
+        await GNFT.nftBal();
+        await GNFT.contractURI();
+        await GNFT.currentPrice();
+
+        await expect(GNFT.connect(owner).setBaseURI('testuri')).to.be.revertedWith("!AUTH");
+        await GNFT.connect(artist).setBaseURI('testuri');
+
+        await expect(GNFT.connect(owner).setContractURI('testuri')).to.be.revertedWith("!AUTH");
+        await GNFT.connect(artist).setContractURI('testuri');
 
     });
 
     it('Factory Coverage Testing', async function () {
         console.log("******************************************************");
+        await expect(factory.connect(user1).setTreasury(user1.address)).to.be.reverted;
+        await factory.connect(owner).setTreasury(user1.address);
+        await factory.connect(owner).setTreasury(protocol.address);
+
+        await expect(factory.connect(user1).setGBTFactory(user1.address)).to.be.reverted;
+        await factory.connect(owner).setGBTFactory(user1.address);
+        await factory.connect(owner).setGBTFactory(gbtFactory.address);
+
+        await expect(factory.connect(user1).setGNFTFactory(user1.address)).to.be.reverted;
+        await factory.connect(owner).setGNFTFactory(user1.address);
+        await factory.connect(owner).setGNFTFactory(gnftFactory.address);
+
+        await expect(factory.connect(user1).setXGBTFactory(user1.address)).to.be.reverted;
+        await factory.connect(owner).setXGBTFactory(user1.address);
+        await factory.connect(owner).setXGBTFactory(xgbtFactory.address);
+
+        await expect(factory.connect(user1).updateFactoryAllowlist(artist.address, true)).to.be.reverted;
+        await factory.connect(owner).updateFactoryAllowlist(artist.address, true);
+
+        await expect(factory.connect(user1).allowExisting(0, true)).to.be.reverted;
+        await factory.connect(owner).allowExisting(0, true);
+
+        await expect(factory.connect(user1).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], true)).to.be.reverted;
+        await factory.connect(owner).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], true);
+
+        await expect(factory.connect(user2).addReward(XGBT.address, USDC.address, user1.address)).to.be.reverted;
+        await factory.connect(owner).addReward(XGBT.address, USDC.address, owner.address);
+
+        await expect(factory.connect(user2).setRewardsDistributor(XGBT.address, USDC.address, user1.address)).to.be.reverted;
+        await factory.connect(owner).setRewardsDistributor(XGBT.address, USDC.address, user1.address);
+        await factory.connect(owner).setRewardsDistributor(XGBT.address, USDC.address, owner.address);
 
         await factory.totalDeployed();
-        await factory.connect(owner).updateTokenLibrary(tokenLibrary.address);
-        await factory.connect(owner).updateNFTLibrary(nftLibrary.address);
-        await factory.connect(owner).addOrRemoveFactoryWhitelist(artist.address, true);
-        await factory.connect(owner).whitelistExisting(0, true);
 
     });
 
@@ -690,6 +726,7 @@ describe("Factory Testing", function () {
         let reserveVirtualETH = await GBT.reserveVirtualBASE();
         let reserveRealETH = await GBT.reserveRealBASE();
         let balanceETH = await weth.balanceOf(GBT.address);
+        let balanceGBT = await GBT.balanceOf(GBT.address);
         let reserveGBT = await GBT.reserveGBT()
         let totalSupplyGBT = await GBT.totalSupply();
         let borrowedTotalETH = await GBT.borrowedTotalBASE();
@@ -733,12 +770,6 @@ describe("Factory Testing", function () {
         let user3EarnedETH = await XGBT.earned(user3.address, weth.address);
         let user3BorrowedETH = await GBT.borrowedBASE(user3.address);
         let user3MustStayGBT = await GBT.mustStayGBT(user3.address);
-
-        // Invariants
-
-        // for each user: mustStayGBT <= staked balance 
-        // bonding curve balance ETH = rETH + bETH
-        // GBT staked = sum of users staked balances
 
         console.log("BONDING CURVE RESERVES");
         console.log("GBT Reserve", divDec(reserveGBT));
@@ -805,6 +836,10 @@ describe("Factory Testing", function () {
         console.log("Borrowed ETH", divDec(user3BorrowedETH));
         console.log("Must Stay GBT", divDec(user3MustStayGBT));
         console.log();
+
+        // invariants
+        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
+        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
 
     });
 

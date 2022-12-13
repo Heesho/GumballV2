@@ -7,58 +7,13 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
-library Math {
-
-    /**
-     * @dev Returns the smallest of two numbers.
-     */
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-}
-
-contract Owned {
-    address public owner;
-    address public nominatedOwner;
-
-    constructor(address _owner) {
-        require(_owner != address(0), "Owner address cannot be 0");
-        owner = _owner;
-        emit OwnerChanged(address(0), _owner);
-    }
-
-    function nominateNewOwner(address _owner) external onlyOwner {
-        nominatedOwner = _owner;
-        emit OwnerNominated(_owner);
-    }
-
-    function acceptOwnership() external {
-        require(msg.sender == nominatedOwner, "You must be nominated before you can accept ownership");
-        emit OwnerChanged(owner, nominatedOwner);
-        owner = nominatedOwner;
-        nominatedOwner = address(0);
-    }
-
-    modifier onlyOwner {
-        _onlyOwner();
-        _;
-    }
-
-    function _onlyOwner() private view {
-        require(msg.sender == owner, "Only the contract owner may perform this action");
-    }
-
-    event OwnerNominated(address newOwner);
-    event OwnerChanged(address oldOwner, address newOwner);
-}
-
-interface IERC20BondingCurve {
+interface IGBT {
     function mustStayGBT(address account) external view returns (uint256);
 }
 
-contract GumbarL is ReentrancyGuard, Owned {
+contract XGBT is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant DURATION = 7 days;
@@ -84,28 +39,26 @@ contract GumbarL is ReentrancyGuard, Owned {
     mapping(address => mapping(address => uint256)) public userRewardPerTokenPaid;
     mapping(address => mapping(address => uint256)) public rewards;
 
-    uint256 private _totalSupply;
+    uint256 private _totalSupply; 
     mapping(address => uint256) private _balances;
 
     mapping(address => uint256) public balanceToken; // Accounts deposited GBTs
     mapping(address => uint256[]) public balanceNFT; // Accounts deposited NFTs
 
-    uint256 public _totalToken;
-    uint256 public _totalNFT;
+    uint256 private _totalToken;
+    uint256 private _totalNFT;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _owner,
+        address _factory,
         address _stakingToken,
-        address _stakingNFT,
-        address _baseToken
-    ) Owned(_owner) {
+        address _stakingNFT
+    ) {
+        require(_factory != address(0), "!0");
+        factory = _factory;
         stakingToken = IERC20(_stakingToken);
         stakingNFT = IERC721(_stakingNFT);
-        factory = msg.sender;
-        addReward(_stakingToken, _stakingToken);
-        addReward(_baseToken, _stakingToken);
     }
 
     function addReward(
@@ -114,7 +67,7 @@ contract GumbarL is ReentrancyGuard, Owned {
     )
         public
     {
-        require((msg.sender == owner),"addReward: permission is denied!");
+        require((msg.sender == factory),"addReward: permission is denied!");
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
@@ -167,7 +120,8 @@ contract GumbarL is ReentrancyGuard, Owned {
         address account = msg.sender;
         require(amount > 0, "Cannot deposit 0");
         _totalToken += amount;
-        _totalSupply = _totalSupply + amount;
+        _totalSupply += amount;
+        
         balanceToken[account] = balanceToken[account] + amount;
         _balances[account] = _balances[account] + amount;
         stakingToken.safeTransferFrom(account, address(this), amount);
@@ -179,10 +133,11 @@ contract GumbarL is ReentrancyGuard, Owned {
         require(amount > 0, "Cannot withdraw 0");
         require(amount <= balanceToken[account], "Insufficient balance"); 
         _totalToken -= amount;
-        _totalSupply = _totalSupply - amount;
+        _totalSupply -= amount;
+        
         balanceToken[account] = balanceToken[account] - amount;
         _balances[account] = _balances[account] - amount;
-        require(_balances[account] >= IERC20BondingCurve(address(stakingToken)).mustStayGBT(account), "Borrow debt");
+        require(_balances[account] >= IGBT(address(stakingToken)).mustStayGBT(account), "Borrow debt");
         stakingToken.safeTransfer(msg.sender, amount);
         emit Withdrawn(account, amount);
     }
@@ -195,7 +150,7 @@ contract GumbarL is ReentrancyGuard, Owned {
         require(_id.length > 0, "Cannot deposit 0");
         uint256 amount = _id.length * 1e18;
         _totalNFT += amount;
-        _totalSupply = _totalSupply + amount;
+        _totalSupply += amount;
         _balances[account] = _balances[account] + amount;
 
         for (uint256 i = 0; i < _id.length; i++) {
@@ -220,9 +175,9 @@ contract GumbarL is ReentrancyGuard, Owned {
         }
 
         _totalNFT -= amount;
-        _totalSupply = _totalSupply - amount;
+        _totalSupply -= amount;
         _balances[account] = _balances[account] - amount;
-        require(_balances[account] >= IERC20BondingCurve(address(stakingToken)).mustStayGBT(account), "Borrow debt");
+        require(_balances[account] >= IGBT(address(stakingToken)).mustStayGBT(account), "Borrow debt");
 
         for (uint256 i = 0; i <_id.length; i++) {
             IERC721(stakingNFT).transferFrom(address(this), account, _id[i]);
@@ -267,7 +222,8 @@ contract GumbarL is ReentrancyGuard, Owned {
         emit RewardNotified(reward);
     }
 
-    function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor) external onlyOwner {
+    function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor) external {
+        require(msg.sender == factory, "!AUTH");
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
         emit DistributorSet(_rewardsToken, _rewardsDistributor);
     }
@@ -333,4 +289,29 @@ contract GumbarL is ReentrancyGuard, Owned {
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
     event RewardAdded(address reward, address distributor);
     event DistributorSet(address reward, address distributor);
+}
+
+contract XGBTFactory {
+    address public factory;
+    address public lastXGBT;
+
+    constructor() {
+        factory = msg.sender;
+    }
+
+    function setFactory(address _factory) external {
+        require(msg.sender == factory, "!AUTH");
+        factory = _factory;
+    }
+
+    function createXGBT(
+        address _owner,
+        address _stakingToken,
+        address _stakingNFT
+    ) external returns (address) {
+        require(msg.sender == factory, "!AUTH");
+        XGBT newXGBT = new XGBT(_owner, _stakingToken, _stakingNFT);
+        lastXGBT = address(newXGBT);
+        return lastXGBT;
+    }
 }

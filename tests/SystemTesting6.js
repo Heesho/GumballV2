@@ -29,149 +29,168 @@ const startBlock = "1";
 const startTime = Math.floor(Date.now() / 1000);
 
 // users
-let owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball;
-let weth, GBT, XGBT, GNFT, USDC;
+let owner, admin, user1, user2, user3, artist, protocol;
+let weth, USDC, market;
+let gbtFactory, gnftFactory, xgbtFactory, factory;
+let GBT, GNFT, XGBT;
 
-describe("Whitelist testing", function () {
+describe("SystemTesting6", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
 
         // initialize users
-        [owner, admin, user1, user2, user3, gumbar, artist, protocol, gumball] = await ethers.getSigners();
+        [owner, admin, user1, user2, user3, artist, protocol] = await ethers.getSigners();
 
         // initialize tokens
         // mints 1000 tokens to deployer
-        const erc20Mock = await ethers.getContractFactory("ERC20Mock");
-        weth = await erc20Mock.deploy("WETH", "WETH");
-        USDC = await erc20Mock.deploy("USDC", "USDC")
+        const ETHContract = await ethers.getContractFactory("ERC20Mock");
+        weth = await ETHContract.deploy("ETH", "ETH");
+        USDC = await ETHContract.deploy("ETH", "ETH");
+        await weth.deployed();
         await weth.mint(user1.address, oneThousand);
         await weth.mint(user2.address, oneThousand);
         await weth.mint(user3.address, oneThousand);
         console.log("- Tokens Initialized");
 
-        // initialize ERC20BondingCurve
-        const GBTArtifact = await ethers.getContractFactory("ERC20BondingCurve");
-        const GBTContract = await GBTArtifact.deploy();
-        GBT = await ethers.getContractAt("ERC20BondingCurve", GBTContract.address);
-        console.log("- ER20 Bonding Curve Initialized");
+        const GBTFactory = await ethers.getContractFactory("GBTFactory");
+        gbtFactory = await GBTFactory.deploy();
+        await gbtFactory.deployed();
+        console.log("- GBTFactory Initialized");
 
-        await GBT.initialize('GumBall Token 1', 
-                             'GBT1',
-                             weth.address,
-                             oneHundred,
-                             oneHundred,
-                             gumball.address,
-                             gumbar.address,
-                             artist.address,
-                             protocol.address,
-                             24*60*60
-                             );
+        const GNFTFactory = await ethers.getContractFactory("GNFTFactory");
+        gnftFactory = await GNFTFactory.deploy();
+        await gnftFactory.deployed();
+        console.log("- GNFTFactory Initialized");
 
-        const GNFTArtifact = await ethers.getContractFactory("Gumball");
-        const GNFTContract = await GNFTArtifact.deploy();
-        GNFT = await ethers.getContractAt("Gumball", GNFTContract.address);
+        const XGBTFactory = await ethers.getContractFactory("XGBTFactory");
+        xgbtFactory = await XGBTFactory.deploy();
+        await xgbtFactory.deployed();
+        console.log("- XGBTFactory Initialized");
 
-        await GNFT.initialize("Gumball Collection 1",
-                            "GBT1",
-                            ["http", ""],
-                            GBT.address
-                            );
+        const GumBallFactory = await ethers.getContractFactory("GumBallFactory");
+        factory = await GumBallFactory.deploy(gbtFactory.address, gnftFactory.address, xgbtFactory.address, protocol.address);
+        await factory.deployed();
+        console.log("- GumBallFactory Initialized");
 
+        await gbtFactory.connect(owner).setFactory(factory.address);
+        await gnftFactory.connect(owner).setFactory(factory.address);
+        await xgbtFactory.connect(owner).setFactory(factory.address);
 
-        console.log("- Gumball Initialized");
+        await factory.deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 0, 100);
+        let GumBallData = await factory.deployInfo(0);
+        GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
+        GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
+        XGBT = await ethers.getContractAt("contracts/XGBTFactory.sol:XGBT", GumBallData[2]);
+        console.log("- GumBall Initialized");
 
-        // initialize Gumbar 
-        const XGBTArtifact = await ethers.getContractFactory("Gumbar");
-        const XGBTContract = await XGBTArtifact.deploy(protocol.address, GBT.address, GNFT.address);
-        XGBT = await ethers.getContractAt("Gumbar", XGBTContract.address);
-        await GBT.setGumbar(XGBT.address);
-        await XGBT.connect(protocol).addReward(GBT.address, GBT.address);
-        await XGBT.connect(protocol).addReward(weth.address, GBT.address);
-        console.log("- Gumbar Initialized");
-        
+        const Market = await ethers.getContractFactory("MarketPlace");
+        market = await Market.deploy();
+        await market.deployed();
+
         console.log("Initialization Complete");
         console.log("******************************************************");
     });
 
-    it('Whitelist User1 and User2', async function () {
+    it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
-        await GBT.connect(protocol)._whitelist([user1.address, user2.address], true);
+        await weth.connect(user1).approve(GBT.address, ten);
+        await GBT.connect(user1).buy(ten, 1, 1682282187);
+    });
+
+    it('User1 Sells GBT with 10 WETH', async function () {
+        console.log("******************************************************");
+        await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
     });
 
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
-
-        await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
-
-    });
-
-    it('User1 Buys GBT with 1 WETH', async function () {
-        console.log("******************************************************");
-
         await weth.connect(user1).approve(GBT.address, one);
         await GBT.connect(user1).buy(one, 1, 1682282187);
+    });
+
+    it('User1 stakes all GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(XGBT.address, await GBT.balanceOf(user1.address));
+        await XGBT.connect(user1).depositToken(await GBT.balanceOf(user1.address));
 
     });
 
-    it('User1 Buys GBT with 1 WETH', async function () {
+    it('User1 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await weth.connect(user1).approve(GBT.address, one);
-        await expect(GBT.connect(user1).buy(one, 1, 1682282187)).to.be.revertedWith("Whitelist amount overflow");
+        await GBT.connect(user1).treasurySkim();
 
     });
 
-    it('User1 sells all GBT', async function () {
+    it('Forward 3 days', async function () {
         console.log("******************************************************");
 
-        await GBT.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
-
-    });
-
-    it('User1 Buys GBT with 1 WETH', async function () {
-        console.log("******************************************************");
-
-        await weth.connect(user1).approve(GBT.address, one);
-        await expect(GBT.connect(user1).buy(one, 1, 1682282187)).to.be.revertedWith("Whitelist amount overflow");
-
-    });
-
-    it('User3 tries to Buy GBT with 10 WETH', async function () {
-        console.log("******************************************************");
-
-        await weth.connect(user3).approve(GBT.address, ten);
-        await expect(GBT.connect(user3).buy(ten, 1, 1682282187)).to.be.revertedWith("Market Closed");
-
-    });
-
-    it('User3 trys to Buy GBT with 10 WETH after 24 hours', async function () {
-        console.log("******************************************************");
-
-        await network.provider.send('evm_increaseTime', [24*3600]); 
+        await network.provider.send('evm_increaseTime', [3*24*3600]); 
         await network.provider.send('evm_mine');
 
-        await weth.connect(user3).approve(GBT.address, ten);
-        await GBT.connect(user3).buy(ten, 1, 1682282187);
+    });
+
+    it('User1 unstakes all GBT', async function () {
+        console.log("******************************************************");
+
+        await XGBT.connect(user1).withdrawToken(await XGBT.balanceOf(user1.address));
+
+    });
+
+    it('Forward 3 days', async function () {
+        console.log("******************************************************");
+
+        await network.provider.send('evm_increaseTime', [3*24*3600]); 
+        await network.provider.send('evm_mine');
 
     });
 
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
-
         await weth.connect(user1).approve(GBT.address, ten);
         await GBT.connect(user1).buy(ten, 1, 1682282187);
+    });
+
+    it('User1 converts 1 GBT to 1 gNFT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GNFT.address, one);
+        await GNFT.connect(user1).swap(one);
+
+    });
+
+    it('User1 converts NFT to GBT', async function () {
+        console.log("******************************************************");
+
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user1.address, 0);
+        await GNFT.connect(user1).approve(GNFT.address, tokenID);
+        await GNFT.connect(user1).redeem([tokenID]);
 
     });
 
     it('User2 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
-
         await weth.connect(user2).approve(GBT.address, ten);
         await GBT.connect(user2).buy(ten, 1, 1682282187);
+    });
 
+    it('User2 swaps GBT for NFT in GumBall machine', async function () {
+        console.log("******************************************************");
+        await GBT.connect(user2).approve(GNFT.address, one);
+        await GNFT.connect(user2).swapForExact([0]);
+    });
+
+    it('User2 sets approval for all to market ', async function () {
+        console.log("******************************************************");
+        await GNFT.connect(user2).setApprovalForAll(market.address, true);
+    });
+
+    it('User2 transfers nft to market', async function () {
+        console.log("******************************************************");
+        await market.connect(user2).grabNFT(GNFT.address, 0);
     });
 
     it('System Status', async function () {
@@ -180,6 +199,7 @@ describe("Whitelist testing", function () {
         let reserveVirtualETH = await GBT.reserveVirtualBASE();
         let reserveRealETH = await GBT.reserveRealBASE();
         let balanceETH = await weth.balanceOf(GBT.address);
+        let balanceGBT = await GBT.balanceOf(GBT.address);
         let reserveGBT = await GBT.reserveGBT()
         let totalSupplyGBT = await GBT.totalSupply();
         let borrowedTotalETH = await GBT.borrowedTotalBASE();
@@ -223,12 +243,6 @@ describe("Whitelist testing", function () {
         let user3EarnedETH = await XGBT.earned(user3.address, weth.address);
         let user3BorrowedETH = await GBT.borrowedBASE(user3.address);
         let user3MustStayGBT = await GBT.mustStayGBT(user3.address);
-
-        // Invariants
-
-        // for each user: mustStayGBT <= staked balance 
-        // bonding curve balance ETH = rETH + bETH
-        // GBT staked = sum of users staked balances
 
         console.log("BONDING CURVE RESERVES");
         console.log("GBT Reserve", divDec(reserveGBT));
@@ -295,6 +309,10 @@ describe("Whitelist testing", function () {
         console.log("Borrowed ETH", divDec(user3BorrowedETH));
         console.log("Must Stay GBT", divDec(user3MustStayGBT));
         console.log();
+
+        // invariants
+        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
+        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
 
     });
 
