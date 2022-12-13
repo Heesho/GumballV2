@@ -236,7 +236,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         require((msg.sender == IGBT(GBT).artist()),"!AUTH");
         baseTokenURI = uri;
 
-        // emit SetBaseURI(uri);
+        emit SetBaseURI(uri);
     }
 
     /** @dev Allows the protocol to set {contractURI} 
@@ -246,7 +246,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         require((msg.sender == IGBT(GBT).artist()),"!AUTH");
         _contractURI = uri;
 
-        // emit SetContractURI(uri);
+        emit SetContractURI(uri);
     }
     
 }
