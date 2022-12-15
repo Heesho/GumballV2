@@ -59,8 +59,6 @@ contract GBT is ERC20, ReentrancyGuard {
     event Borrow(address indexed user, uint256 amount);
     event Repay(address indexed user, uint256 amount);
     event Skim(address indexed user);
-    event UpdateOwnership(address newOwner);
-    event SetTreasury(address newTreasury);
     event ChangeArtist(address newArtist);
 
     constructor(
@@ -364,6 +362,7 @@ contract GBT is ERC20, ReentrancyGuard {
     function setArtist(address _artist) external {
         require(msg.sender == artist, "!AUTH");
         artist = _artist;
+        emit ChangeArtist(_artist);
     }
     
 }
