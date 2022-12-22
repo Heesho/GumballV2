@@ -23,15 +23,15 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     Counters.Counter private _tokenIdCounter;
 
     // Fee
-    uint256  public bFee; // redemption fee
-    uint256 constant DIVISOR = 1000;
+    uint256 public immutable bFee; // redemption fee
+    uint256 public constant DIVISOR = 1000;
 
     // Token
     string public baseTokenURI;
     
     // Protocol
-    address public GBT;
-    string _contractURI;
+    address public immutable GBT;
+    string public _contractURI;
 
     mapping (uint256 => int256) public gumballIndex;
     uint256[] public gumballs;
@@ -49,7 +49,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         address _GBT,
         uint256 _bFee
         ) ERC721(name, symbol) {
-        require(bFee <= 100, "Redemption fee too high");
+        require(_bFee <= 100, "Redemption fee too high");
         baseTokenURI = _URIs[0];
         _contractURI = _URIs[1];
         GBT = _GBT;
@@ -60,29 +60,29 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     ////// Public //////
     ////////////////////
 
-    function gumballsLength() public view returns (uint256) {
+    function gumballsLength() external view returns (uint256) {
         return gumballs.length;
     }
 
-    function owner() public view returns (address) {	
+    function owner() external view returns (address) {	
         return IGBT(GBT).artist();	
     }
 
     /** Returns bal of {GBT} */
-    function tokenBal() public view returns (uint256) {
+    function tokenBal() external view returns (uint256) {
         return IERC20(GBT).balanceOf(address(this));
     }
 
     /** Returns bal of {Gumball} */
-    function nftBal() public view returns (uint256) {
+    function nftBal() external view returns (uint256) {
         return balanceOf(address(this));
     }
 
-    function contractURI() public view returns (string memory) {
+    function contractURI() external view returns (string memory) {
         return _contractURI;
     }
 
-    function currentPrice() public view returns (uint256) {
+    function currentPrice() external view returns (uint256) {
         return IGBT(GBT).currentPrice();
     }
 
@@ -93,20 +93,21 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows user to swap {GBT} for an exact {Gumball} that has already been minted
       * @param id is an array of {Gumball}s the user is swapping for 
     */
-    function swapForExact(uint256[] memory id) external nonReentrant {
+    function swapForExact(uint256[] calldata id) external nonReentrant {
         require(IERC20(GBT).balanceOf(msg.sender) >= enWei(id.length), "Insuffient funds");
+        require(id.length != 0, "Parameter length cannot be zero");
 
         uint256 before = IERC20(GBT).balanceOf(address(this));
 
         for(uint256 i = 0; i < id.length; i ++) {
-            require(gumballIndex[id[i]] != -1, "Error");
+            require(gumballIndex[id[i]] != -1, "NFT removed from mapping, sentinel number (-1)");
             _pop(uint256(gumballIndex[id[i]]));
             gumballIndex[id[i]] = -1;
             IERC721(address(this)).transferFrom(address(this), msg.sender, id[i]);
         }
         
         IERC20(GBT).safeTransferFrom(msg.sender, address(this), enWei(id.length));
-        require(IERC20(GBT).balanceOf(address(this)) >= before + enWei(id.length), "Bad Swap");
+        require(IERC20(GBT).balanceOf(address(this)) >= before + enWei(id.length), "Contract balance underflow");
 
         emit ExactSwap(msg.sender, id);
     }
@@ -117,15 +118,16 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     function swap(uint256 _amount) external nonReentrant {
         require(enETH(_amount) * 1e18 == _amount, "Whole GBTs only");
         require(IERC20(GBT).balanceOf(msg.sender) >= enWei(1), "Insuffient funds");
+        require(_amount > 0, "Amount cannot be zero");
 
         uint256 before = IERC20(GBT).balanceOf(address(this));
 
         IERC20(GBT).safeTransferFrom(msg.sender, address(this), _amount);
 
         for(uint256 i = 0; i < enETH(_amount); i++) {
-            safeMint(msg.sender);
+            mint(msg.sender);
         }
-        require(IERC20(GBT).balanceOf(address(this)) >= before + _amount, "Bad Swap");
+        require(IERC20(GBT).balanceOf(address(this)) >= before + _amount, "Contract balance underflow");
 
         emit Swap(msg.sender, _amount);
     }
@@ -133,8 +135,9 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows user to swap their gumball(s) to the contract for a payout of {GBT} 
       * @param _id is an array of ids of the gumball token(s) swapped in
     */
-    function redeem(uint256[] memory _id) external nonReentrant {
+    function redeem(uint256[] calldata _id) external nonReentrant {
         require(IERC721(address(this)).balanceOf(msg.sender) >= _id.length, "Insuffient Balance");
+        require(_id.length != 0, "Parameter length cannot be zero");
 
         uint256 before = IERC721(address(this)).balanceOf(address(this));
         uint256 burnAmount = enWei(_id.length) * bFee / DIVISOR;
@@ -185,10 +188,9 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
 
     /** @dev {_tokenIdTracker} counter tracks the id of next NFT
       * @param to mints to address */
-    function safeMint(address to) internal {
-        uint256 tokenId = _tokenIdCounter.current();
+    function mint(address to) internal {
+        _mint(to, _tokenIdCounter.current());
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
     }
 
     /////////////////////
@@ -232,8 +234,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows the protocol to set {baseURI}
       * @param uri is the updated URI
     */
-    function setBaseURI(string memory uri) external {
-        require((msg.sender == IGBT(GBT).artist()),"!AUTH");
+    function setBaseURI(string calldata uri) external OnlyArtist {
         baseTokenURI = uri;
 
         emit SetBaseURI(uri);
@@ -242,26 +243,31 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows the protocol to set {contractURI} 
       * @param uri is the updated URI
     */
-    function setContractURI(string memory uri) external {
-        require((msg.sender == IGBT(GBT).artist()),"!AUTH");
+    function setContractURI(string calldata uri) external OnlyArtist {
         _contractURI = uri;
 
         emit SetContractURI(uri);
     }
-    
+
+    modifier OnlyArtist() {
+        require(msg.sender == IGBT(GBT).artist(), "!AUTH");
+        _;
+    }
 }
 
 contract GNFTFactory {
     address public factory;
     address public lastGNFT;
 
+    event FactorySet(address indexed _factory);
+
     constructor() {
         factory = msg.sender;
     }
 
-    function setFactory(address _factory) external {
-        require(msg.sender == factory, "!AUTH");
+    function setFactory(address _factory) external OnlyFactory {
         factory = _factory;
+        emit FactorySet(_factory);
     }
 
     function createGNFT(
@@ -270,10 +276,14 @@ contract GNFTFactory {
         string[] memory _URIs,
         address _GBT, 
         uint256 _bFee
-    ) external returns (address) {
-        require(msg.sender == factory, "!AUTH");
+    ) external OnlyFactory returns (address) {
         GNFT newGNFT = new GNFT(_name, _symbol, _URIs, _GBT, _bFee);
         lastGNFT = address(newGNFT);
         return lastGNFT;
+    }
+
+    modifier OnlyFactory() {
+        require(msg.sender == factory, "!AUTH");
+        _;
     }
 }

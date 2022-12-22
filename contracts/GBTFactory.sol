@@ -19,13 +19,13 @@ contract GBT is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // Bonding Curve Variables
-    address public BASE_TOKEN;
+    address public immutable BASE_TOKEN;
 
-    uint256 public reserveVirtualBASE;
+    uint256 public immutable reserveVirtualBASE;
     uint256 public reserveRealBASE;
     uint256 public reserveGBT;
     
-    uint256 public initial_totalSupply;
+    uint256 public immutable initial_totalSupply;
 
     // Treasury Variables
     uint256 public treasuryBASE;
@@ -34,24 +34,24 @@ contract GBT is ERC20, ReentrancyGuard {
     // Addresses
     address public XGBT;
     address public artist;
-    address public factory;
+    address public immutable factory;
 
     // Allowlist Variables
     mapping(address => bool) public allowlist;
     mapping(address => uint256) public limit;
-    uint256 start;
-    uint256 delay;
+    uint256 public immutable start;
+    uint256 public immutable delay;
 
     // Borrow Variables
     uint256 public borrowedTotalBASE;
     mapping(address => uint256) public borrowedBASE;
 
     // Fee
-    uint256 constant PROTOCOL = 25;
-    uint256 constant TREASURY = 200;
-    uint256 constant GUMBAR = 400;
-    uint256 constant ARTIST = 400;
-    uint256 constant DIVISOR = 1000;
+    uint256 public constant PROTOCOL = 25;
+    uint256 public constant TREASURY = 200;
+    uint256 public constant GUMBAR = 400;
+    uint256 public constant ARTIST = 400;
+    uint256 public constant DIVISOR = 1000;
 
     // Events
     event Buy(address indexed user, uint256 amount);
@@ -59,6 +59,8 @@ contract GBT is ERC20, ReentrancyGuard {
     event Borrow(address indexed user, uint256 amount);
     event Repay(address indexed user, uint256 amount);
     event Skim(address indexed user);
+    event AllowListUpdated(address[] accounts, bool flag);
+    event XGBTSet(address indexed _XGBT);
     event ChangeArtist(address newArtist);
 
     constructor(
@@ -94,12 +96,12 @@ contract GBT is ERC20, ReentrancyGuard {
     //////////////////
 
     /** @dev returns the current price of {GBT} */
-    function currentPrice() public view returns (uint256) {
+    function currentPrice() external view returns (uint256) {
         return ((reserveVirtualBASE + reserveRealBASE) * 1e18) / reserveGBT;
     }
 
     /** @dev returns the allowance @param user can borrow */
-    function borrowCredit(address account) public view returns (uint256) {
+    function borrowCredit(address account) external view returns (uint256) {
         uint256 borrowPowerGBT = IXGBT(XGBT).balanceOf(account);
         if (borrowPowerGBT == 0) {
             return 0;
@@ -109,36 +111,36 @@ contract GBT is ERC20, ReentrancyGuard {
         return borrowableBASE;
     }
 
-    function skimReward() public view returns (uint256) {
+    function skimReward() external view returns (uint256) {
         return treasuryBASE * 10 / 10000;
     }
 
     /** @dev returns amount borrowed by @param user */
-    function debt(address account) public view returns (uint256) {
+    function debt(address account) external view returns (uint256) {
         return borrowedBASE[account];
     }
 
-    function baseBal() public view returns (uint256) {
+    function baseBal() external view returns (uint256) {
         return IERC20(BASE_TOKEN).balanceOf(address(this));
     }
 
-    function gbtBal() public view returns (uint256) {
+    function gbtBal() external view returns (uint256) {
         return IERC20(address(this)).balanceOf(address(this));
     }
 
-    function getFactory() public view returns (address) {
+    function getFactory() external view returns (address) {
         return factory;
     }
 
-    function initSupply() public view returns (uint256) {
+    function initSupply() external view returns (uint256) {
         return initial_totalSupply;
     }
 
-    function floorPrice() public view returns (uint256) {
+    function floorPrice() external view returns (uint256) {
         return (reserveVirtualBASE * 1e18) / totalSupply();
     }
 
-    function mustStayGBT(address account) public view returns (uint256) {
+    function mustStayGBT(address account) external view returns (uint256) {
         uint256 accountBorrowedBASE = borrowedBASE[account];
         if (accountBorrowedBASE == 0) {
             return 0;
@@ -160,9 +162,10 @@ contract GBT is ERC20, ReentrancyGuard {
       *     1. the user must be whitelisted by the protocol to call the function
       *     2. the whitelisted user cannont buy more than 1 GBT until the delay has elapsed
     */
-    function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp) public nonReentrant {
+    function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp) external nonReentrant {
         require(start + delay <= block.timestamp || allowlist[msg.sender], "Market Closed");
         require(expireTimestamp == 0 || expireTimestamp > block.timestamp, "Expired");
+        require(_amountBASE > 0, "Amount cannot be zero");
 
         address account = msg.sender;
 
@@ -202,6 +205,7 @@ contract GBT is ERC20, ReentrancyGuard {
     */
     function sell(uint256 _amountGBT, uint256 _minETH, uint256 expireTimestamp) external nonReentrant {
         require(expireTimestamp == 0 || expireTimestamp > block.timestamp, "Expired");
+        require(_amountGBT > 0, "Amount cannot be zero");
 
         address account = msg.sender;
 
@@ -242,7 +246,6 @@ contract GBT is ERC20, ReentrancyGuard {
 
         address treasury = IGumBallFactory(factory).getTreasury();
 
-        // requires here 
         IERC20(address(this)).safeApprove(XGBT, 0);
         IERC20(address(this)).safeApprove(XGBT, _treasuryGBT * GUMBAR / DIVISOR);
         IXGBT(XGBT).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
@@ -352,11 +355,12 @@ contract GBT is ERC20, ReentrancyGuard {
         for (uint256 i = 0; i < accounts.length; i++) {
             allowlist[accounts[i]] = _bool;
         }
+        emit AllowListUpdated(accounts, _bool);
     }
 
-    function setXGBT(address _XGBT) external {
-        require(msg.sender == factory, "!AUTH");
+    function setXGBT(address _XGBT) external OnlyFactory {
         XGBT = _XGBT;
+        emit XGBTSet(_XGBT);
     }
 
     function setArtist(address _artist) external {
@@ -364,20 +368,26 @@ contract GBT is ERC20, ReentrancyGuard {
         artist = _artist;
         emit ChangeArtist(_artist);
     }
-    
+
+    modifier OnlyFactory() {
+        require(msg.sender == factory, "!AUTH");
+        _;
+    }
 }
 
 contract GBTFactory {
     address public factory;
     address public lastGBT;
 
+    event FactorySet(address indexed _factory);
+
     constructor() {
         factory = msg.sender;
     }
 
-    function setFactory(address _factory) external {
-        require(msg.sender == factory, "!AUTH");
+    function setFactory(address _factory) external OnlyFactory {
         factory = _factory;
+        emit FactorySet(_factory);
     }
 
     function createGBT(
@@ -389,10 +399,14 @@ contract GBTFactory {
         address _artist,
         address _factory,
         uint256 _delay
-    ) external returns (address) {
-        require(msg.sender == factory, "!AUTH");
+    ) external OnlyFactory returns (address) {
         GBT newGBT = new GBT(_name, _symbol, _baseToken, _initialVirtualBASE, _supplyGBT, _artist, _factory, _delay);
         lastGBT = address(newGBT);
         return lastGBT;
+    }
+
+    modifier OnlyFactory() {
+        require(msg.sender == factory, "!AUTH");
+        _;
     }
 }
