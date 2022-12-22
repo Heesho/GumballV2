@@ -28,9 +28,9 @@ contract XGBT is ReentrancyGuard {
         uint256 rewardPerTokenStored;
     }
 
-    IERC20 public stakingToken;
-    IERC721 public stakingNFT;
-    address public factory;
+    IERC20 public immutable stakingToken;
+    IERC721 public immutable stakingNFT;
+    address public immutable factory;
     mapping(address => Reward) public rewardData;
     mapping(address => bool) public isRewardToken;
     address[] public rewardTokens;

@@ -19,13 +19,13 @@ contract GBT is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // Bonding Curve Variables
-    address public BASE_TOKEN;
+    address public immutable BASE_TOKEN;
 
-    uint256 public reserveVirtualBASE;
+    uint256 public immutable reserveVirtualBASE;
     uint256 public reserveRealBASE;
     uint256 public reserveGBT;
     
-    uint256 public initial_totalSupply;
+    uint256 public immutable initial_totalSupply;
 
     // Treasury Variables
     uint256 public treasuryBASE;
@@ -34,13 +34,13 @@ contract GBT is ERC20, ReentrancyGuard {
     // Addresses
     address public XGBT;
     address public artist;
-    address public factory;
+    address public immutable factory;
 
     // Allowlist Variables
     mapping(address => bool) public allowlist;
     mapping(address => uint256) public limit;
-    uint256 start;
-    uint256 delay;
+    uint256 public immutable start;
+    uint256 public immutable delay;
 
     // Borrow Variables
     uint256 public borrowedTotalBASE;
@@ -59,6 +59,8 @@ contract GBT is ERC20, ReentrancyGuard {
     event Borrow(address indexed user, uint256 amount);
     event Repay(address indexed user, uint256 amount);
     event Skim(address indexed user);
+    event AllowListUpdated(address[] accounts, bool flag);
+    event XGBTSet(address indexed _XGBT);
     event ChangeArtist(address newArtist);
 
     constructor(
@@ -352,11 +354,13 @@ contract GBT is ERC20, ReentrancyGuard {
         for (uint256 i = 0; i < accounts.length; i++) {
             allowlist[accounts[i]] = _bool;
         }
+        emit AllowListUpdated(accounts, _bool);
     }
 
     function setXGBT(address _XGBT) external {
         require(msg.sender == factory, "!AUTH");
         XGBT = _XGBT;
+        emit XGBTSet(_XGBT);
     }
 
     function setArtist(address _artist) external {

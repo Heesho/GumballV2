@@ -23,14 +23,14 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     Counters.Counter private _tokenIdCounter;
 
     // Fee
-    uint256  public bFee; // redemption fee
+    uint256 public immutable bFee; // redemption fee
     uint256 constant DIVISOR = 1000;
 
     // Token
     string public baseTokenURI;
     
     // Protocol
-    address public GBT;
+    address public immutable GBT;
     string _contractURI;
 
     mapping (uint256 => int256) public gumballIndex;
@@ -49,7 +49,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         address _GBT,
         uint256 _bFee
         ) ERC721(name, symbol) {
-        require(bFee <= 100, "Redemption fee too high");
+        require(_bFee <= 100, "Redemption fee too high");
         baseTokenURI = _URIs[0];
         _contractURI = _URIs[1];
         GBT = _GBT;
@@ -123,7 +123,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         IERC20(GBT).safeTransferFrom(msg.sender, address(this), _amount);
 
         for(uint256 i = 0; i < enETH(_amount); i++) {
-            safeMint(msg.sender);
+            mint(msg.sender);
         }
         require(IERC20(GBT).balanceOf(address(this)) >= before + _amount, "Bad Swap");
 
@@ -185,10 +185,9 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
 
     /** @dev {_tokenIdTracker} counter tracks the id of next NFT
       * @param to mints to address */
-    function safeMint(address to) internal {
-        uint256 tokenId = _tokenIdCounter.current();
+    function mint(address to) internal {
+        _mint(to, _tokenIdCounter.current());
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
     }
 
     /////////////////////
