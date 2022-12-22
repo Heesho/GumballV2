@@ -65,7 +65,7 @@ contract XGBT is ReentrancyGuard {
         address _rewardsToken,
         address _rewardsDistributor
     )
-        public
+        external
     {
         require((msg.sender == factory),"addReward: permission is denied!");
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
@@ -128,7 +128,7 @@ contract XGBT is ReentrancyGuard {
         emit Deposited(account, amount);
     }
 
-    function withdrawToken(uint256 amount) public nonReentrant updateReward(msg.sender) {
+    function withdrawToken(uint256 amount) external nonReentrant updateReward(msg.sender) {
         address account = msg.sender;
         require(amount > 0, "Cannot withdraw 0");
         require(amount <= balanceToken[account], "Insufficient balance"); 
@@ -145,7 +145,7 @@ contract XGBT is ReentrancyGuard {
         /** @dev Stake Gumball(s) NFTs to receive rewards
       * @param _id is an array of Gumballs desired for staking
     */
-    function depositNFT(uint256[] memory _id) external nonReentrant updateReward(msg.sender) {
+    function depositNFT(uint256[] calldata _id) external nonReentrant updateReward(msg.sender) {
         address account = msg.sender;
         require(_id.length > 0, "Cannot deposit 0");
         uint256 amount = _id.length * 1e18;
@@ -164,7 +164,7 @@ contract XGBT is ReentrancyGuard {
     /** @dev Remove Gumball(s) from the contract and leave staking
       * @param _id is an array of Gumballs desired for unstaking
     */
-    function withdrawNFT(uint256[] memory _id) external nonReentrant updateReward(msg.sender) {
+    function withdrawNFT(uint256[] calldata _id) external nonReentrant updateReward(msg.sender) {
         address account = msg.sender;
         require(balanceNFT[account].length >= _id.length, "Withdrawal underflow");
         uint256 amount = _id.length * 1e18;
@@ -186,7 +186,7 @@ contract XGBT is ReentrancyGuard {
         emit WithdrawNFT(msg.sender, address(stakingNFT), _id);
     }
 
-    function getReward() public nonReentrant updateReward(msg.sender) {
+    function getReward() external nonReentrant updateReward(msg.sender) {
         for (uint i; i < rewardTokens.length; i++) {
             address _rewardsToken = rewardTokens[i];
             uint256 reward = rewards[msg.sender][_rewardsToken];
@@ -295,6 +295,8 @@ contract XGBTFactory {
     address public factory;
     address public lastXGBT;
 
+    event FactorySet(address indexed _factory);
+
     constructor() {
         factory = msg.sender;
     }
@@ -302,6 +304,7 @@ contract XGBTFactory {
     function setFactory(address _factory) external {
         require(msg.sender == factory, "!AUTH");
         factory = _factory;
+        emit FactorySet(_factory);
     }
 
     function createXGBT(

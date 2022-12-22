@@ -75,11 +75,11 @@ contract GumBallFactory is Ownable {
         treasury = _treasury;
     }
 
-    function deployInfo(uint256 id) public view returns (address token, address nft, address gumbar, bool _allowed) {	
+    function deployInfo(uint256 id) external view returns (address token, address nft, address gumbar, bool _allowed) {	
         return (gumballs[id].GBT, gumballs[id].GNFT, gumballs[id].XGBT, gumballs[id].allowed);
     }
 
-    function totalDeployed() public view returns (uint256 length) {	
+    function totalDeployed() external view returns (uint256 length) {	
         return gumballs.length;	
   }
 
@@ -88,16 +88,16 @@ contract GumBallFactory is Ownable {
     }
 
     function deployGumBall(
-        string memory _name,
-        string memory _symbol,
-        string[] memory _URIs,
+        string calldata _name,
+        string calldata _symbol,
+        string[] calldata _URIs,
         uint256 _supplyBASE,
         uint256 _supplyGBT,
         address _base,
         address _artist,
         uint256 _delay,
         uint256 _bFee
-    ) public {
+    ) external {
         require(bytes(_name).length != 0 && bytes(_symbol).length != 0 && bytes(_URIs[0]).length != 0 && bytes(_URIs[1]).length != 0, "Incomplete name, symbol or URI");
         require(_URIs.length == 2 && _supplyGBT >= 1 && _supplyBASE >=1, "Invalid URI length, supply or virtual base");
         require(_base != address(0) && _artist != address(0), "Base token or artist cannot be zero address");
@@ -160,7 +160,7 @@ contract GumBallFactory is Ownable {
     //////// GBT ////////
     /////////////////////
 
-    function updateGumBallAllowlist(address _tokenAddr, address[] memory accounts, bool _bool) external onlyOwner {
+    function updateGumBallAllowlist(address _tokenAddr, address[] calldata accounts, bool _bool) external onlyOwner {
         IGBT(_tokenAddr).updateAllowlist(accounts, _bool);
     }
 

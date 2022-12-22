@@ -24,14 +24,14 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
 
     // Fee
     uint256 public immutable bFee; // redemption fee
-    uint256 constant DIVISOR = 1000;
+    uint256 public constant DIVISOR = 1000;
 
     // Token
     string public baseTokenURI;
     
     // Protocol
     address public immutable GBT;
-    string _contractURI;
+    string public _contractURI;
 
     mapping (uint256 => int256) public gumballIndex;
     uint256[] public gumballs;
@@ -60,29 +60,29 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     ////// Public //////
     ////////////////////
 
-    function gumballsLength() public view returns (uint256) {
+    function gumballsLength() external view returns (uint256) {
         return gumballs.length;
     }
 
-    function owner() public view returns (address) {	
+    function owner() external view returns (address) {	
         return IGBT(GBT).artist();	
     }
 
     /** Returns bal of {GBT} */
-    function tokenBal() public view returns (uint256) {
+    function tokenBal() external view returns (uint256) {
         return IERC20(GBT).balanceOf(address(this));
     }
 
     /** Returns bal of {Gumball} */
-    function nftBal() public view returns (uint256) {
+    function nftBal() external view returns (uint256) {
         return balanceOf(address(this));
     }
 
-    function contractURI() public view returns (string memory) {
+    function contractURI() external view returns (string memory) {
         return _contractURI;
     }
 
-    function currentPrice() public view returns (uint256) {
+    function currentPrice() external view returns (uint256) {
         return IGBT(GBT).currentPrice();
     }
 
@@ -93,7 +93,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows user to swap {GBT} for an exact {Gumball} that has already been minted
       * @param id is an array of {Gumball}s the user is swapping for 
     */
-    function swapForExact(uint256[] memory id) external nonReentrant {
+    function swapForExact(uint256[] calldata id) external nonReentrant {
         require(IERC20(GBT).balanceOf(msg.sender) >= enWei(id.length), "Insuffient funds");
 
         uint256 before = IERC20(GBT).balanceOf(address(this));
@@ -133,7 +133,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows user to swap their gumball(s) to the contract for a payout of {GBT} 
       * @param _id is an array of ids of the gumball token(s) swapped in
     */
-    function redeem(uint256[] memory _id) external nonReentrant {
+    function redeem(uint256[] calldata _id) external nonReentrant {
         require(IERC721(address(this)).balanceOf(msg.sender) >= _id.length, "Insuffient Balance");
 
         uint256 before = IERC721(address(this)).balanceOf(address(this));
@@ -231,7 +231,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows the protocol to set {baseURI}
       * @param uri is the updated URI
     */
-    function setBaseURI(string memory uri) external {
+    function setBaseURI(string calldata uri) external {
         require((msg.sender == IGBT(GBT).artist()),"!AUTH");
         baseTokenURI = uri;
 
@@ -241,7 +241,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev Allows the protocol to set {contractURI} 
       * @param uri is the updated URI
     */
-    function setContractURI(string memory uri) external {
+    function setContractURI(string calldata uri) external {
         require((msg.sender == IGBT(GBT).artist()),"!AUTH");
         _contractURI = uri;
 
@@ -254,6 +254,8 @@ contract GNFTFactory {
     address public factory;
     address public lastGNFT;
 
+    event FactorySet(address indexed _factory);
+
     constructor() {
         factory = msg.sender;
     }
@@ -261,6 +263,7 @@ contract GNFTFactory {
     function setFactory(address _factory) external {
         require(msg.sender == factory, "!AUTH");
         factory = _factory;
+        emit FactorySet(_factory);
     }
 
     function createGNFT(

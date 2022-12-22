@@ -47,11 +47,11 @@ contract GBT is ERC20, ReentrancyGuard {
     mapping(address => uint256) public borrowedBASE;
 
     // Fee
-    uint256 constant PROTOCOL = 25;
-    uint256 constant TREASURY = 200;
-    uint256 constant GUMBAR = 400;
-    uint256 constant ARTIST = 400;
-    uint256 constant DIVISOR = 1000;
+    uint256 public constant PROTOCOL = 25;
+    uint256 public constant TREASURY = 200;
+    uint256 public constant GUMBAR = 400;
+    uint256 public constant ARTIST = 400;
+    uint256 public constant DIVISOR = 1000;
 
     // Events
     event Buy(address indexed user, uint256 amount);
@@ -96,12 +96,12 @@ contract GBT is ERC20, ReentrancyGuard {
     //////////////////
 
     /** @dev returns the current price of {GBT} */
-    function currentPrice() public view returns (uint256) {
+    function currentPrice() external view returns (uint256) {
         return ((reserveVirtualBASE + reserveRealBASE) * 1e18) / reserveGBT;
     }
 
     /** @dev returns the allowance @param user can borrow */
-    function borrowCredit(address account) public view returns (uint256) {
+    function borrowCredit(address account) external view returns (uint256) {
         uint256 borrowPowerGBT = IXGBT(XGBT).balanceOf(account);
         if (borrowPowerGBT == 0) {
             return 0;
@@ -111,36 +111,36 @@ contract GBT is ERC20, ReentrancyGuard {
         return borrowableBASE;
     }
 
-    function skimReward() public view returns (uint256) {
+    function skimReward() external view returns (uint256) {
         return treasuryBASE * 10 / 10000;
     }
 
     /** @dev returns amount borrowed by @param user */
-    function debt(address account) public view returns (uint256) {
+    function debt(address account) external view returns (uint256) {
         return borrowedBASE[account];
     }
 
-    function baseBal() public view returns (uint256) {
+    function baseBal() external view returns (uint256) {
         return IERC20(BASE_TOKEN).balanceOf(address(this));
     }
 
-    function gbtBal() public view returns (uint256) {
+    function gbtBal() external view returns (uint256) {
         return IERC20(address(this)).balanceOf(address(this));
     }
 
-    function getFactory() public view returns (address) {
+    function getFactory() external view returns (address) {
         return factory;
     }
 
-    function initSupply() public view returns (uint256) {
+    function initSupply() external view returns (uint256) {
         return initial_totalSupply;
     }
 
-    function floorPrice() public view returns (uint256) {
+    function floorPrice() external view returns (uint256) {
         return (reserveVirtualBASE * 1e18) / totalSupply();
     }
 
-    function mustStayGBT(address account) public view returns (uint256) {
+    function mustStayGBT(address account) external view returns (uint256) {
         uint256 accountBorrowedBASE = borrowedBASE[account];
         if (accountBorrowedBASE == 0) {
             return 0;
@@ -162,7 +162,7 @@ contract GBT is ERC20, ReentrancyGuard {
       *     1. the user must be whitelisted by the protocol to call the function
       *     2. the whitelisted user cannont buy more than 1 GBT until the delay has elapsed
     */
-    function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp) public nonReentrant {
+    function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp) external nonReentrant {
         require(start + delay <= block.timestamp || allowlist[msg.sender], "Market Closed");
         require(expireTimestamp == 0 || expireTimestamp > block.timestamp, "Expired");
 
@@ -375,6 +375,8 @@ contract GBTFactory {
     address public factory;
     address public lastGBT;
 
+    event FactorySet(address indexed _factory);
+
     constructor() {
         factory = msg.sender;
     }
@@ -382,6 +384,7 @@ contract GBTFactory {
     function setFactory(address _factory) external {
         require(msg.sender == factory, "!AUTH");
         factory = _factory;
+        emit FactorySet(_factory);
     }
 
     function createGBT(
