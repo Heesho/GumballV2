@@ -32,6 +32,8 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     // Protocol
     address public immutable GBT;
     string public _contractURI;
+    uint256 public immutable maxSupply;
+
 
     mapping (uint256 => int256) public gumballIndex;
     uint256[] public gumballs;
@@ -54,6 +56,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         _contractURI = _URIs[1];
         GBT = _GBT;
         bFee = _bFee;
+        maxSupply = IGBT(GBT).initSupply() / 1e18;
     }
 
     ////////////////////
@@ -189,6 +192,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     /** @dev {_tokenIdTracker} counter tracks the id of next NFT
       * @param to mints to address */
     function mint(address to) internal {
+        require(_tokenIdCounter.current() < maxSupply, "Max Supply Minted");
         _mint(to, _tokenIdCounter.current());
         _tokenIdCounter.increment();
     }
