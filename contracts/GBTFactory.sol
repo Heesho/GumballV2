@@ -47,7 +47,7 @@ contract GBT is ERC20, ReentrancyGuard {
     mapping(address => uint256) public borrowedBASE;
 
     // Fee
-    uint256 public constant PROTOCOL = 25;
+    uint256 public constant PROTOCOL = 50;
     uint256 public constant TREASURY = 200;
     uint256 public constant GUMBAR = 400;
     uint256 public constant ARTIST = 400;

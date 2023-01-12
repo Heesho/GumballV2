@@ -14,6 +14,7 @@ const four = convert('4', 18);
 const five = convert('5', 18);
 const ten = convert('10', 18);
 const twenty = convert('20', 18)
+const twentyOne = convert('21', 18)
 const fifty = convert('50', 18)
 const oneHundred = convert('100', 18);
 const twoHundred = convert('200', 18);
@@ -35,7 +36,7 @@ let weth, USDC;
 let gbtFactory, gnftFactory, xgbtFactory, factory;
 let GBT, GNFT, XGBT;
 
-describe.only("SystemTesting7", function () {
+describe("SystemTesting7", function () {
   
     before("Initial set up", async function () {
         console.log("Begin Initialization");
@@ -315,6 +316,14 @@ describe.only("SystemTesting7", function () {
                                         tokenID10, tokenID11, tokenID12, tokenID13, tokenID14, tokenID15, tokenID16, tokenID17, tokenID18, tokenID19]);
     });
 
+    it('User1 mints 21 NFT with GBT', async function () {
+        console.log("******************************************************");
+
+        await GBT.connect(user1).approve(GNFT.address, twentyOne);
+        await expect(GNFT.connect(user1).swap(twentyOne)).to.be.revertedWith('Max Supply Minted');
+
+    });
+
     it('User1 mints 20 NFT with GBT', async function () {
         console.log("******************************************************");
 
@@ -372,18 +381,14 @@ describe.only("SystemTesting7", function () {
 
     it('User1 mints 1 NFT with GBT', async function () {
         console.log("******************************************************");
-
         await GBT.connect(user1).approve(GNFT.address, one);
         await expect(GNFT.connect(user1).swap(one)).to.be.revertedWith('Max Supply Minted');
-
     });
 
     it('User1 mints 1 NFT with GBT', async function () {
         console.log("******************************************************");
-
         await GBT.connect(user1).approve(GNFT.address, one);
         await expect(GNFT.connect(user1).swap(one)).to.be.revertedWith('Max Supply Minted');
-
     });
 
     it('System Status', async function () {
@@ -410,6 +415,7 @@ describe.only("SystemTesting7", function () {
         let protocolGBT = await GBT.balanceOf(protocol.address);
         let protocolETH = await weth.balanceOf(protocol.address);
 
+        let nftMaxSupply = await GNFT.maxSupply();
         let nftSupply = await GNFT.totalSupply();
 
         let user1ETH = await weth.balanceOf(user1.address);
@@ -457,6 +463,7 @@ describe.only("SystemTesting7", function () {
         console.log();
 
         console.log("Gumball Machine");
+        console.log("NFT Max Supply", nftMaxSupply);
         console.log("NFT Supply", nftSupply);
         for (let i = 0; i < await GNFT.gumballsLength(); i++) {
             console.log("Gumball", i, " ", await GNFT.gumballs(i));
