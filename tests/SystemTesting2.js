@@ -32,7 +32,7 @@ const startTime = Math.floor(Date.now() / 1000);
 let owner, admin, user1, user2, user3, artist, protocol;
 let weth, USDC;
 let gbtFactory, gnftFactory, xgbtFactory, factory;
-let GBT, GNFT, XGBT;
+let GBT, GNFT, XGBT, GBTFees;
 
 describe("SystemTesting2", function () {
   
@@ -82,6 +82,7 @@ describe("SystemTesting2", function () {
         GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
         XGBT = await ethers.getContractAt("contracts/XGBTFactory.sol:XGBT", GumBallData[2]);
+        GBTFees = await ethers.getContractAt("contracts/GBTFactory.sol:GBTFees", await GBT.getFees());
         console.log("- GumBall Initialized");
 
         console.log("Initialization Complete");
@@ -101,7 +102,7 @@ describe("SystemTesting2", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
 
     });
 
@@ -133,7 +134,7 @@ describe("SystemTesting2", function () {
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
     });
 
     it('User1 converts 5 GBT to 5 gNFT', async function () {
@@ -164,7 +165,7 @@ describe("SystemTesting2", function () {
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
     });
 
     it('User1 sells all GBT', async function () {
@@ -176,14 +177,14 @@ describe("SystemTesting2", function () {
     it('User2 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await GBT.connect(user2).treasurySkim();
+        await GBTFees.connect(user2).distributeFees();
 
     });
 
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
     });
 
 
@@ -201,9 +202,6 @@ describe("SystemTesting2", function () {
         let gumbarGBT = await XGBT.totalSupply();
         let rFDGBT = await XGBT.getRewardForDuration(GBT.address);
         let rFDETH = await XGBT.getRewardForDuration(weth.address);
-
-        let treasuryETH = await GBT.treasuryBASE();
-        let treasuryGBT = await GBT.treasuryGBT();
 
         let artistGBT = await GBT.balanceOf(artist.address);
         let artistETH = await weth.balanceOf(artist.address);
@@ -242,8 +240,6 @@ describe("SystemTesting2", function () {
         console.log("GBT Reserve", divDec(reserveGBT));
         console.log("vETH Reserve", divDec(reserveVirtualETH));
         console.log("rETH Reserve", divDec(reserveRealETH));
-        console.log("GBT Treasury", divDec(treasuryGBT));
-        console.log("ETH Treasury", divDec(treasuryETH));
         console.log("ETH Borrowed", divDec(borrowedTotalETH));
         console.log("ETH Balance", divDec(balanceETH));
         console.log("GBT Total Supply", divDec(totalSupplyGBT));
@@ -305,8 +301,8 @@ describe("SystemTesting2", function () {
         console.log();
 
         // invariants
-        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
-        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
+        await expect(reserveGBT).to.be.equal(balanceGBT);
+        await expect(reserveRealETH.sub(borrowedTotalETH)).to.be.equal(balanceETH);
 
     });
 

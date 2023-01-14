@@ -32,7 +32,7 @@ const startTime = Math.floor(Date.now() / 1000);
 let owner, admin, user1, user2, user3, artist, protocol;
 let weth, USDC;
 let gbtFactory, gnftFactory, xgbtFactory, factory;
-let GBT, GNFT, XGBT;
+let GBT, GNFT, XGBT, GBTFees;
 
 describe("SystemTesting3", function () {
   
@@ -82,6 +82,7 @@ describe("SystemTesting3", function () {
         GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
         XGBT = await ethers.getContractAt("contracts/XGBTFactory.sol:XGBT", GumBallData[2]);
+        GBTFees = await ethers.getContractAt("contracts/GBTFactory.sol:GBTFees", await GBT.getFees());
         console.log("- GumBall Initialized");
 
         console.log("Initialization Complete");
@@ -92,7 +93,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
 
     });
 
@@ -139,7 +140,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187);
+        await GBT.connect(user2).buy(ten, 1, 1682282187, AddressZero);
 
     });
 
@@ -210,7 +211,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187);
+        await GBT.connect(user2).buy(ten, 1, 1682282187, AddressZero);
 
     });
 
@@ -256,7 +257,7 @@ describe("SystemTesting3", function () {
     it('User2 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await GBT.connect(user2).treasurySkim();
+        await GBTFees.connect(user2).distributeFees();
 
     });
 
@@ -279,7 +280,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user3).approve(GBT.address, oneHundred);
-        await GBT.connect(user3).buy(oneHundred, 1, 1682282187);
+        await GBT.connect(user3).buy(oneHundred, 1, 1682282187, AddressZero);
 
     });
 
@@ -397,7 +398,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, fifty);
-        await GBT.connect(user1).buy(fifty, 1, 1682282187);
+        await GBT.connect(user1).buy(fifty, 1, 1682282187, AddressZero);
 
     });
 
@@ -412,7 +413,7 @@ describe("SystemTesting3", function () {
     it('User1 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await GBT.connect(user1).treasurySkim();
+        await GBTFees.connect(user2).distributeFees();
 
     });
 
@@ -453,7 +454,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, fifty);
-        await GBT.connect(user1).buy(fifty, 1, 1682282187);
+        await GBT.connect(user1).buy(fifty, 1, 1682282187, AddressZero);
 
     });
 
@@ -479,7 +480,7 @@ describe("SystemTesting3", function () {
     it('User1 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await GBT.connect(user1).treasurySkim();
+        await GBTFees.connect(user2).distributeFees();
 
     });
 
@@ -495,7 +496,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
 
     });
 
@@ -510,7 +511,7 @@ describe("SystemTesting3", function () {
     it('User1 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await expect(GBT.connect(user1).treasurySkim()).to.be.revertedWith('reward amount should be greater than leftover amount');
+        await expect(GBTFees.connect(user2).distributeFees()).to.be.revertedWith('reward amount should be greater than leftover amount');
 
     });
 
@@ -518,7 +519,7 @@ describe("SystemTesting3", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, fifty);
-        await GBT.connect(user1).buy(fifty, 1, 1682282187);
+        await GBT.connect(user1).buy(fifty, 1, 1682282187, AddressZero);
 
     });
 
@@ -537,9 +538,6 @@ describe("SystemTesting3", function () {
         let gumbarGBT = await XGBT.totalSupply();
         let rFDGBT = await XGBT.getRewardForDuration(GBT.address);
         let rFDETH = await XGBT.getRewardForDuration(weth.address);
-
-        let treasuryETH = await GBT.treasuryBASE();
-        let treasuryGBT = await GBT.treasuryGBT();
 
         let artistGBT = await GBT.balanceOf(artist.address);
         let artistETH = await weth.balanceOf(artist.address);
@@ -578,8 +576,6 @@ describe("SystemTesting3", function () {
         console.log("GBT Reserve", divDec(reserveGBT));
         console.log("vETH Reserve", divDec(reserveVirtualETH));
         console.log("rETH Reserve", divDec(reserveRealETH));
-        console.log("GBT Treasury", divDec(treasuryGBT));
-        console.log("ETH Treasury", divDec(treasuryETH));
         console.log("ETH Borrowed", divDec(borrowedTotalETH));
         console.log("ETH Balance", divDec(balanceETH));
         console.log("GBT Total Supply", divDec(totalSupplyGBT));
@@ -641,8 +637,8 @@ describe("SystemTesting3", function () {
         console.log();
 
         // invariants
-        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
-        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
+        await expect(reserveGBT).to.be.equal(balanceGBT);
+        await expect(reserveRealETH.sub(borrowedTotalETH)).to.be.equal(balanceETH);
 
     });
 

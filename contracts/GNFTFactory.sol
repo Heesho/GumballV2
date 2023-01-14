@@ -14,6 +14,7 @@ interface IGBT {
     function getProtocol() external view returns (address);
     function initSupply() external view returns (uint256);
     function artist() external view returns (address);
+    function getFees() external view returns (address);
 }
 
 contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
@@ -31,6 +32,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
     
     // Protocol
     address public immutable GBT;
+    address public immutable fees;
     string public _contractURI;
     uint256 public immutable maxSupply;
 
@@ -56,6 +58,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         _contractURI = _URIs[1];
         GBT = _GBT;
         bFee = _bFee;
+        fees = IGBT(GBT).getFees();
         maxSupply = IGBT(GBT).initSupply() / 1e18;
     }
 
@@ -151,7 +154,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
             IERC721(address(this)).transferFrom(msg.sender, address(this), _id[i]);
         }
 
-        IERC20(GBT).safeTransfer(GBT, burnAmount);
+        IERC20(GBT).safeTransfer(fees, burnAmount);
         IERC20(GBT).safeTransfer(msg.sender, enWei(_id.length) - burnAmount);
 
         require(IERC721(address(this)).balanceOf(address(this)) >= before + _id.length, "Bad Swap");

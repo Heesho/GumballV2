@@ -37,6 +37,7 @@ interface IXGBTFactory {
 interface IGBT {
     function setXGBT(address _XGBT) external;
     function updateAllowlist(address[] memory accounts, bool _bool) external;
+    function getFees() external view returns (address);
 }
 
 interface IXGBT {
@@ -110,8 +111,8 @@ contract GumBallFactory is Ownable {
         address xgbt = IXGBTFactory(XGBTFactory).createXGBT(address(this), gbt, gnft);
         
         IGBT(gbt).setXGBT(xgbt);
-        IXGBT(xgbt).addReward(gbt, gbt);
-        IXGBT(xgbt).addReward(_base, gbt);
+        IXGBT(xgbt).addReward(gbt, IGBT(gbt).getFees());
+        IXGBT(xgbt).addReward(_base, IGBT(gbt).getFees());
 
         bool allow;
         if (allowlist[msg.sender]) {

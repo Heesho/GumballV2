@@ -92,7 +92,7 @@ describe("SystemTesting4", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
 
     });
 
@@ -127,9 +127,6 @@ describe("SystemTesting4", function () {
         let gumbarGBT = await XGBT.totalSupply();
         let rFDGBT = await XGBT.getRewardForDuration(GBT.address);
         let rFDETH = await XGBT.getRewardForDuration(weth.address);
-
-        let treasuryETH = await GBT.treasuryBASE();
-        let treasuryGBT = await GBT.treasuryGBT();
 
         let artistGBT = await GBT.balanceOf(artist.address);
         let artistETH = await weth.balanceOf(artist.address);
@@ -168,8 +165,6 @@ describe("SystemTesting4", function () {
         console.log("GBT Reserve", divDec(reserveGBT));
         console.log("vETH Reserve", divDec(reserveVirtualETH));
         console.log("rETH Reserve", divDec(reserveRealETH));
-        console.log("GBT Treasury", divDec(treasuryGBT));
-        console.log("ETH Treasury", divDec(treasuryETH));
         console.log("ETH Borrowed", divDec(borrowedTotalETH));
         console.log("ETH Balance", divDec(balanceETH));
         console.log("GBT Total Supply", divDec(totalSupplyGBT));
@@ -231,8 +226,8 @@ describe("SystemTesting4", function () {
         console.log();
 
         // invariants
-        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
-        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
+        await expect(reserveGBT).to.be.equal(balanceGBT);
+        await expect(reserveRealETH.sub(borrowedTotalETH)).to.be.equal(balanceETH);
 
     });
 

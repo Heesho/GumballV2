@@ -32,7 +32,7 @@ const startTime = Math.floor(Date.now() / 1000);
 let owner, admin, user1, user2, user3, artist, protocol;
 let weth, USDC, market;
 let gbtFactory, gnftFactory, xgbtFactory, factory;
-let GBT, GNFT, XGBT;
+let GBT, GNFT, XGBT, GBTFees;
 
 describe("SystemTesting6", function () {
   
@@ -82,6 +82,7 @@ describe("SystemTesting6", function () {
         GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
         XGBT = await ethers.getContractAt("contracts/XGBTFactory.sol:XGBT", GumBallData[2]);
+        GBTFees = await ethers.getContractAt("contracts/GBTFactory.sol:GBTFees", await GBT.getFees());
         console.log("- GumBall Initialized");
 
         const Market = await ethers.getContractFactory("MarketPlace");
@@ -95,7 +96,7 @@ describe("SystemTesting6", function () {
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
     });
 
     it('User1 Sells GBT with 10 WETH', async function () {
@@ -107,7 +108,7 @@ describe("SystemTesting6", function () {
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, one);
-        await GBT.connect(user1).buy(one, 1, 1682282187);
+        await GBT.connect(user1).buy(one, 1, 1682282187, AddressZero);
     });
 
     it('User1 stakes all GBT', async function () {
@@ -121,7 +122,7 @@ describe("SystemTesting6", function () {
     it('User1 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await GBT.connect(user1).treasurySkim();
+        await GBTFees.connect(user1).distributeFees();
 
     });
 
@@ -151,7 +152,7 @@ describe("SystemTesting6", function () {
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187);
+        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
     });
 
     it('User1 converts 1 GBT to 1 gNFT', async function () {
@@ -174,7 +175,7 @@ describe("SystemTesting6", function () {
     it('User2 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187);
+        await GBT.connect(user2).buy(ten, 1, 1682282187, AddressZero);
     });
 
     it('User2 swaps GBT for NFT in GumBall machine', async function () {
@@ -207,9 +208,6 @@ describe("SystemTesting6", function () {
         let gumbarGBT = await XGBT.totalSupply();
         let rFDGBT = await XGBT.getRewardForDuration(GBT.address);
         let rFDETH = await XGBT.getRewardForDuration(weth.address);
-
-        let treasuryETH = await GBT.treasuryBASE();
-        let treasuryGBT = await GBT.treasuryGBT();
 
         let artistGBT = await GBT.balanceOf(artist.address);
         let artistETH = await weth.balanceOf(artist.address);
@@ -248,8 +246,6 @@ describe("SystemTesting6", function () {
         console.log("GBT Reserve", divDec(reserveGBT));
         console.log("vETH Reserve", divDec(reserveVirtualETH));
         console.log("rETH Reserve", divDec(reserveRealETH));
-        console.log("GBT Treasury", divDec(treasuryGBT));
-        console.log("ETH Treasury", divDec(treasuryETH));
         console.log("ETH Borrowed", divDec(borrowedTotalETH));
         console.log("ETH Balance", divDec(balanceETH));
         console.log("GBT Total Supply", divDec(totalSupplyGBT));
@@ -311,8 +307,8 @@ describe("SystemTesting6", function () {
         console.log();
 
         // invariants
-        await expect(reserveGBT.add(treasuryGBT)).to.be.equal(balanceGBT);
-        await expect(reserveRealETH.add(treasuryETH).sub(borrowedTotalETH)).to.be.equal(balanceETH);
+        await expect(reserveGBT).to.be.equal(balanceGBT);
+        await expect(reserveRealETH.sub(borrowedTotalETH)).to.be.equal(balanceETH);
 
     });
 

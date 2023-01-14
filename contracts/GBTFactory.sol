@@ -15,6 +15,63 @@ interface IXGBT {
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external; 
 }
 
+interface IGBT {
+    function getXGBT() external view returns (address);
+    function getFactory() external view returns (address);
+    function getArtist() external view returns (address);
+}
+
+contract GBTFees {
+    using SafeERC20 for IERC20;
+
+    address internal immutable _GBT;
+    address internal immutable _BASE;
+    uint256 public constant TREASURY = 200;
+    uint256 public constant GUMBAR = 400;
+    uint256 public constant ARTIST = 400;
+    uint256 public constant REWARD = 10;
+    uint256 public constant DIVISOR = 1000;
+
+    event Distribute(address indexed user);
+
+    constructor(address __GBT, address __BASE) {
+        _GBT = __GBT;
+        _BASE = __BASE;
+    }
+
+    function distributeReward() external view returns (uint256) {
+        return IERC20(_BASE).balanceOf(address(this)) * REWARD / DIVISOR;
+    }
+
+    function distributeFees() external {
+        uint256 balanceGBT = IERC20(_GBT).balanceOf(address(this));
+        uint256 balanceBASE = IERC20(_BASE).balanceOf(address(this));
+
+        uint256 reward = balanceGBT * REWARD / DIVISOR;
+        balanceBASE -= reward;
+
+        address treasury = IGumBallFactory(IGBT(_GBT).getFactory()).getTreasury();
+        address artist = IGBT(_GBT).getArtist();
+
+        // Distribute GBT
+        IERC20(_GBT).safeApprove(IGBT(_GBT).getXGBT(), 0);
+        IERC20(_GBT).safeApprove(IGBT(_GBT).getXGBT(), balanceGBT * GUMBAR / DIVISOR);
+        IXGBT(IGBT(_GBT).getXGBT()).notifyRewardAmount(_GBT, balanceGBT * GUMBAR / DIVISOR);
+        IERC20(_GBT).safeTransfer(artist, balanceGBT * ARTIST / DIVISOR);
+        IERC20(_GBT).safeTransfer(treasury, balanceGBT * TREASURY / DIVISOR);
+
+        // Distribute BASE
+        IERC20(_BASE).safeApprove(IGBT(_GBT).getXGBT(), 0);
+        IERC20(_BASE).safeApprove(IGBT(_GBT).getXGBT(), balanceBASE * GUMBAR / DIVISOR);
+        IXGBT(IGBT(_GBT).getXGBT()).notifyRewardAmount(_BASE, balanceBASE * GUMBAR / DIVISOR);
+        IERC20(_BASE).safeTransfer(artist, balanceBASE * ARTIST / DIVISOR);
+        IERC20(_BASE).safeTransfer(treasury, balanceBASE * TREASURY / DIVISOR);
+        IERC20(_BASE).safeTransfer(msg.sender, reward);
+
+        emit Distribute(msg.sender);
+    }
+}
+
 contract GBT is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -27,14 +84,15 @@ contract GBT is ERC20, ReentrancyGuard {
     
     uint256 public immutable initial_totalSupply;
 
-    // Treasury Variables
-    uint256 public treasuryBASE;
-    uint256 public treasuryGBT;
-
     // Addresses
     address public XGBT;
     address public artist;
+    address public immutable fees; // Fee Contract
     address public immutable factory;
+
+    // Affiliates
+    mapping(address => bool) public affiliates; // affiliate => bool
+    mapping(address => address) public referrals; // account => affiliate
 
     // Allowlist Variables
     mapping(address => bool) public allowlist;
@@ -48,20 +106,18 @@ contract GBT is ERC20, ReentrancyGuard {
 
     // Fee
     uint256 public constant PROTOCOL = 50;
-    uint256 public constant TREASURY = 200;
-    uint256 public constant GUMBAR = 400;
-    uint256 public constant ARTIST = 400;
+    uint256 public constant AFFILIATE = 100;
     uint256 public constant DIVISOR = 1000;
 
     // Events
-    event Buy(address indexed user, uint256 amount);
-    event Sell(address indexed user, uint256 amount);
+    event Buy(address indexed user, uint256 amount, address indexed affiliate);
+    event Sell(address indexed user, uint256 amount, address indexed affiliate);
     event Borrow(address indexed user, uint256 amount);
     event Repay(address indexed user, uint256 amount);
-    event Skim(address indexed user);
     event AllowListUpdated(address[] accounts, bool flag);
     event XGBTSet(address indexed _XGBT);
     event ChangeArtist(address newArtist);
+    event AffiliateSet(address indexed affiliate, bool flag);
 
     constructor(
         string memory _name,
@@ -86,7 +142,7 @@ contract GBT is ERC20, ReentrancyGuard {
 
         start = block.timestamp;
         delay = _delay;
-
+        fees = address(new GBTFees(address(this), BASE_TOKEN));
         _mint(address(this), _supplyGBT);
 
     }
@@ -111,10 +167,6 @@ contract GBT is ERC20, ReentrancyGuard {
         return borrowableBASE;
     }
 
-    function skimReward() external view returns (uint256) {
-        return treasuryBASE * 10 / 10000;
-    }
-
     /** @dev returns amount borrowed by @param user */
     function debt(address account) external view returns (uint256) {
         return borrowedBASE[account];
@@ -130,6 +182,18 @@ contract GBT is ERC20, ReentrancyGuard {
 
     function getFactory() external view returns (address) {
         return factory;
+    }
+
+    function getXGBT() external view returns (address) {
+        return XGBT;
+    }
+
+    function getFees() external view returns (address) {
+        return fees;
+    }
+
+    function getArtist() external view returns (address) {
+        return artist;
     }
 
     function initSupply() external view returns (uint256) {
@@ -162,16 +226,17 @@ contract GBT is ERC20, ReentrancyGuard {
       *     1. the user must be whitelisted by the protocol to call the function
       *     2. the whitelisted user cannont buy more than 1 GBT until the delay has elapsed
     */
-    function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp) external nonReentrant {
+    function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp, address affiliate) external nonReentrant {
         require(start + delay <= block.timestamp || allowlist[msg.sender], "Market Closed");
         require(expireTimestamp == 0 || expireTimestamp > block.timestamp, "Expired");
         require(_amountBASE > 0, "Amount cannot be zero");
 
         address account = msg.sender;
+        if (referrals[account] == address(0) && affiliate != address(0) && affiliates[affiliate]) {
+            referrals[account] = affiliate;
+        } 
 
-        syncReserves();
         uint256 feeAmountBASE = _amountBASE * PROTOCOL / DIVISOR;
-        treasuryBASE += (feeAmountBASE);
 
         uint256 oldReserveBASE = reserveVirtualBASE + reserveRealBASE;
         uint256 newReserveBASE = oldReserveBASE + _amountBASE - feeAmountBASE;
@@ -192,10 +257,17 @@ contract GBT is ERC20, ReentrancyGuard {
         reserveRealBASE = newReserveBASE - reserveVirtualBASE;
         reserveGBT = newReserveGBT;
 
-        IERC20(BASE_TOKEN).safeTransferFrom(account, address(this), _amountBASE);
+        if (referrals[account] == address(0) || !affiliates[referrals[account]]) {
+            IERC20(BASE_TOKEN).safeTransferFrom(account, fees, feeAmountBASE);
+        } else {
+            IERC20(BASE_TOKEN).safeTransferFrom(account, referrals[account], feeAmountBASE * AFFILIATE / DIVISOR);
+            IERC20(BASE_TOKEN).safeTransferFrom(account, fees, feeAmountBASE - (feeAmountBASE * AFFILIATE / DIVISOR));
+        }
+
+        IERC20(BASE_TOKEN).safeTransferFrom(account, address(this), _amountBASE - feeAmountBASE);
         IERC20(address(this)).safeTransfer(account, outGBT);
 
-        emit Buy(account, _amountBASE);
+        emit Buy(account, _amountBASE, referrals[account]); 
     }
 
     /** @dev Sell function.  User sells their {GBT} token for {BASE}
@@ -209,9 +281,7 @@ contract GBT is ERC20, ReentrancyGuard {
 
         address account = msg.sender;
 
-        syncReserves();
         uint256 feeAmountGBT = _amountGBT * PROTOCOL / DIVISOR;
-        treasuryGBT += feeAmountGBT;
 
         uint256 oldReserveGBT = reserveGBT;
         uint256 newReserveGBT = reserveGBT + _amountGBT - feeAmountGBT;
@@ -226,41 +296,17 @@ contract GBT is ERC20, ReentrancyGuard {
         reserveRealBASE = newReserveBASE - reserveVirtualBASE;
         reserveGBT = newReserveGBT;
 
-        IERC20(address(this)).safeTransferFrom(account, address(this), _amountGBT);
+        if (referrals[account] == address(0) || !affiliates[referrals[account]]) {
+            IERC20(address(this)).safeTransferFrom(account, fees, feeAmountGBT);
+        } else {
+            IERC20(address(this)).safeTransferFrom(account, referrals[account], feeAmountGBT * AFFILIATE / DIVISOR);
+            IERC20(address(this)).safeTransferFrom(account, fees, feeAmountGBT - (feeAmountGBT * AFFILIATE / DIVISOR));
+        }
+
+        IERC20(address(this)).safeTransferFrom(account, address(this), _amountGBT - feeAmountGBT);
         IERC20(BASE_TOKEN).safeTransfer(account, outBASE);
 
-        emit Sell(account, _amountGBT);
-    }
-
-    /** @dev Distributes fees according to their weights.  Rewards the caller 0.1% of {treasuryBASE} */
-    function treasurySkim() external {
-        uint256 _treasuryGBT = treasuryGBT;
-        uint256 _treasuryBASE = treasuryBASE;
-
-        // Reward for the caller
-        uint256 reward = _treasuryBASE * 10 / 10000;   // 0.1%
-        _treasuryBASE -= reward;
-
-        treasuryBASE = 0;
-        treasuryGBT = 0;
-
-        address treasury = IGumBallFactory(factory).getTreasury();
-
-        IERC20(address(this)).safeApprove(XGBT, 0);
-        IERC20(address(this)).safeApprove(XGBT, _treasuryGBT * GUMBAR / DIVISOR);
-        IXGBT(XGBT).notifyRewardAmount(address(this), _treasuryGBT * GUMBAR / DIVISOR);
-        IERC20(address(this)).safeTransfer(artist, _treasuryGBT * ARTIST / DIVISOR);
-        IERC20(address(this)).safeTransfer(treasury, _treasuryGBT * TREASURY / DIVISOR);
-
-        // requires here
-        IERC20(BASE_TOKEN).safeApprove(XGBT, 0);
-        IERC20(BASE_TOKEN).safeApprove(XGBT, _treasuryBASE * GUMBAR / DIVISOR);
-        IXGBT(XGBT).notifyRewardAmount(BASE_TOKEN, _treasuryBASE * GUMBAR / DIVISOR);
-        IERC20(BASE_TOKEN).safeTransfer(artist, _treasuryBASE * ARTIST / DIVISOR);
-        IERC20(BASE_TOKEN).safeTransfer(treasury, _treasuryBASE * TREASURY / DIVISOR);
-        IERC20(BASE_TOKEN).safeTransfer(msg.sender, reward);
-
-        emit Skim(msg.sender);
+        emit Sell(account, _amountGBT, referrals[account]); 
     }
 
     /** @dev User borrows an amount of {BASE} equal to @param _amount */
@@ -331,22 +377,6 @@ contract GBT is ERC20, ReentrancyGuard {
     }
 
     ////////////////////
-    ///// Internal /////
-    ////////////////////
-
-    /** @dev Remove yield and rebalance */
-    function syncReserves() internal {
-        uint256 baseBalance = IERC20(BASE_TOKEN).balanceOf(address(this)) + borrowedTotalBASE;
-        if(baseBalance > reserveRealBASE + treasuryBASE) {
-            treasuryBASE += (baseBalance - reserveRealBASE - treasuryBASE);
-        }
-        uint256 gbtBalance = IERC20(address(this)).balanceOf(address(this));
-        if (gbtBalance > reserveGBT + treasuryGBT) {
-            treasuryGBT += (gbtBalance - reserveGBT - treasuryGBT);
-        }
-    }
-
-    ////////////////////
     //// Restricted ////
     ////////////////////
 
@@ -367,6 +397,12 @@ contract GBT is ERC20, ReentrancyGuard {
         require(msg.sender == artist, "!AUTH");
         artist = _artist;
         emit ChangeArtist(_artist);
+    }
+
+    function setAffiliate(address _affiliate, bool flag) external {
+        require(msg.sender == artist, "!AUTH");
+        affiliates[_affiliate] = flag;
+        emit AffiliateSet(_affiliate, flag);
     }
 
     modifier OnlyFactory() {
