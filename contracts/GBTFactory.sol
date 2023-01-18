@@ -52,7 +52,6 @@ contract GBTFees {
 
         address treasury = IGumBallFactory(IGBT(_GBT).getFactory()).getTreasury();
         address artist = IGBT(_GBT).getArtist();
-
         address _xgbt = IGBT(_GBT).getXGBT();
 
         // Distribute GBT
