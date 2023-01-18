@@ -47,23 +47,25 @@ contract GBTFees {
         uint256 balanceGBT = IERC20(_GBT).balanceOf(address(this));
         uint256 balanceBASE = IERC20(_BASE).balanceOf(address(this));
 
-        uint256 reward = balanceGBT * REWARD / DIVISOR;
+        uint256 reward = balanceBASE * REWARD / DIVISOR;
         balanceBASE -= reward;
 
         address treasury = IGumBallFactory(IGBT(_GBT).getFactory()).getTreasury();
         address artist = IGBT(_GBT).getArtist();
 
+        address _xgbt = IGBT(_GBT).getXGBT();
+
         // Distribute GBT
-        IERC20(_GBT).safeApprove(IGBT(_GBT).getXGBT(), 0);
-        IERC20(_GBT).safeApprove(IGBT(_GBT).getXGBT(), balanceGBT * GUMBAR / DIVISOR);
-        IXGBT(IGBT(_GBT).getXGBT()).notifyRewardAmount(_GBT, balanceGBT * GUMBAR / DIVISOR);
+        IERC20(_GBT).safeApprove(_xgbt, 0);
+        IERC20(_GBT).safeApprove(_xgbt, balanceGBT * GUMBAR / DIVISOR);
+        IXGBT(_xgbt).notifyRewardAmount(_GBT, balanceGBT * GUMBAR / DIVISOR);
         IERC20(_GBT).safeTransfer(artist, balanceGBT * ARTIST / DIVISOR);
         IERC20(_GBT).safeTransfer(treasury, balanceGBT * TREASURY / DIVISOR);
 
         // Distribute BASE
-        IERC20(_BASE).safeApprove(IGBT(_GBT).getXGBT(), 0);
-        IERC20(_BASE).safeApprove(IGBT(_GBT).getXGBT(), balanceBASE * GUMBAR / DIVISOR);
-        IXGBT(IGBT(_GBT).getXGBT()).notifyRewardAmount(_BASE, balanceBASE * GUMBAR / DIVISOR);
+        IERC20(_BASE).safeApprove(_xgbt, 0);
+        IERC20(_BASE).safeApprove(_xgbt, balanceBASE * GUMBAR / DIVISOR);
+        IXGBT(_xgbt).notifyRewardAmount(_BASE, balanceBASE * GUMBAR / DIVISOR);
         IERC20(_BASE).safeTransfer(artist, balanceBASE * ARTIST / DIVISOR);
         IERC20(_BASE).safeTransfer(treasury, balanceBASE * TREASURY / DIVISOR);
         IERC20(_BASE).safeTransfer(msg.sender, reward);
@@ -228,7 +230,7 @@ contract GBT is ERC20, ReentrancyGuard {
     */
     function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp, address affiliate) external nonReentrant {
         require(start + delay <= block.timestamp || allowlist[msg.sender], "Market Closed");
-        require(expireTimestamp == 0 || expireTimestamp > block.timestamp, "Expired");
+        require(expireTimestamp == 0 || expireTimestamp >= block.timestamp, "Expired");
         require(_amountBASE > 0, "Amount cannot be zero");
 
         address account = msg.sender;
@@ -276,7 +278,7 @@ contract GBT is ERC20, ReentrancyGuard {
       * @param expireTimestamp is the expire time on txn
     */
     function sell(uint256 _amountGBT, uint256 _minETH, uint256 expireTimestamp) external nonReentrant {
-        require(expireTimestamp == 0 || expireTimestamp > block.timestamp, "Expired");
+        require(expireTimestamp == 0 || expireTimestamp >= block.timestamp, "Expired");
         require(_amountGBT > 0, "Amount cannot be zero");
 
         address account = msg.sender;
