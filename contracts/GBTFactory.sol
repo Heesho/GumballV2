@@ -96,8 +96,7 @@ contract GBT is ERC20, ReentrancyGuard {
     mapping(address => address) public referrals; // account => affiliate
 
     // Allowlist Variables
-    mapping(address => bool) public allowlist;
-    mapping(address => uint256) public limit;
+    mapping(address => uint256) public allowlist;
     uint256 public immutable start;
     uint256 public immutable delay;
 
@@ -115,7 +114,7 @@ contract GBT is ERC20, ReentrancyGuard {
     event Sell(address indexed user, uint256 amount, address indexed affiliate);
     event Borrow(address indexed user, uint256 amount);
     event Repay(address indexed user, uint256 amount);
-    event AllowListUpdated(address[] accounts, bool flag);
+    event AllowListUpdated(address[] accounts, uint256 amount);
     event XGBTSet(address indexed _XGBT);
     event ChangeArtist(address newArtist);
     event AffiliateSet(address indexed affiliate, bool flag);
@@ -228,7 +227,7 @@ contract GBT is ERC20, ReentrancyGuard {
       *     2. the whitelisted user cannont buy more than 1 GBT until the delay has elapsed
     */
     function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp, address affiliate) external nonReentrant {
-        require(start + delay <= block.timestamp || allowlist[msg.sender], "Market Closed");
+        // require(start + delay <= block.timestamp || allowlist[msg.sender] >= 0, "Market Closed");
         require(expireTimestamp == 0 || expireTimestamp >= block.timestamp, "Expired");
         require(_amountBASE > 0, "Amount cannot be zero");
 
@@ -250,9 +249,8 @@ contract GBT is ERC20, ReentrancyGuard {
         require(outGBT > _minGBT, "Less than Min");
 
         if (start + delay >= block.timestamp) {
-            require(outGBT <= 10e18 && limit[account] <= 10e18, "Over allowlist limit");
-            limit[account] += outGBT;
-            require(limit[account] <= 10e18, "Allowlist amount overflow");
+            require(outGBT <= allowlist[account], "Allowlist amount overflow");
+            allowlist[account] -= outGBT;
         }
 
         reserveRealBASE = newReserveBASE - reserveVirtualBASE;
@@ -381,12 +379,12 @@ contract GBT is ERC20, ReentrancyGuard {
     //// Restricted ////
     ////////////////////
 
-    function updateAllowlist(address[] memory accounts, bool _bool) external {
+    function updateAllowlist(address[] memory accounts, uint256 amount) external {
         require(msg.sender == factory || msg.sender == artist, "!AUTH");
         for (uint256 i = 0; i < accounts.length; i++) {
-            allowlist[accounts[i]] = _bool;
+            allowlist[accounts[i]] = amount;
         }
-        emit AllowListUpdated(accounts, _bool);
+        emit AllowListUpdated(accounts, amount);
     }
 
     function setXGBT(address _XGBT) external OnlyFactory {

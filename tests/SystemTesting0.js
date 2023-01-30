@@ -704,8 +704,8 @@ describe("SystemTesting0", function () {
         await expect(factory.connect(user1).allowExisting(0, true)).to.be.reverted;
         await factory.connect(owner).allowExisting(0, true);
 
-        await expect(factory.connect(user1).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], true)).to.be.reverted;
-        await factory.connect(owner).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], true);
+        await expect(factory.connect(user1).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], one)).to.be.reverted;
+        await factory.connect(owner).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], one);
 
         await expect(factory.connect(user2).addReward(XGBT.address, USDC.address, user1.address)).to.be.reverted;
         await factory.connect(owner).addReward(XGBT.address, USDC.address, owner.address);

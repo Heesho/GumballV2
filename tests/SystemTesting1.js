@@ -91,19 +91,20 @@ describe("SystemTesting1", function () {
 
     it('Artist adds User1 to allowlist', async function () {
         console.log("******************************************************");
-        await expect(GBT.connect(user1).updateAllowlist([user1.address], true)).to.be.revertedWith("!AUTH");
-        await GBT.connect(artist).updateAllowlist([user1.address], true);
+        await expect(GBT.connect(user1).updateAllowlist([user1.address], ten)).to.be.revertedWith("!AUTH");
+        await GBT.connect(artist).updateAllowlist([user1.address], ten);
     });
 
     it('Owner adds Users to allowlist', async function () {
         console.log("******************************************************");
-        await expect(factory.connect(user2).updateGumBallAllowlist(GBT.address, [user2.address], true)).to.be.reverted;
-        await factory.connect(owner).updateGumBallAllowlist(GBT.address, [user2.address], true);
+        await expect(factory.connect(user2).updateGumBallAllowlist(GBT.address, [user2.address], ten)).to.be.reverted;
+        await factory.connect(owner).updateGumBallAllowlist(GBT.address, [user2.address], ten);
     });
 
     it('User1 Buys GBT with 10 WETH', async function () {
         console.log("******************************************************");
 
+        console.log(divDec(await GBT.allowlist(user1.address)));
         await weth.connect(user1).approve(GBT.address, ten);
         await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
 
@@ -145,7 +146,7 @@ describe("SystemTesting1", function () {
         console.log("******************************************************");
 
         await weth.connect(user3).approve(GBT.address, ten);
-        await expect(GBT.connect(user3).buy(ten, 1, 1682282187, AddressZero)).to.be.revertedWith("Market Closed");
+        await expect(GBT.connect(user3).buy(ten, 1, 1682282187, AddressZero)).to.be.revertedWith("Allowlist amount overflow");
 
     });
 
@@ -183,7 +184,7 @@ describe("SystemTesting1", function () {
 
     });
 
-    it('Owner adds user1 to factory allowlist', async function () {
+    it('User1 deploys gumball', async function () {
         console.log("******************************************************");
 
         await factory.connect(user1).deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneThousand, oneHundred, weth.address, user1.address, 0, 100);
