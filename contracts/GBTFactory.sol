@@ -398,10 +398,12 @@ contract GBT is ERC20, ReentrancyGuard {
         emit ChangeArtist(_artist);
     }
 
-    function setAffiliate(address _affiliate, bool flag) external {
-        require(msg.sender == artist, "!AUTH");
-        affiliates[_affiliate] = flag;
-        emit AffiliateSet(_affiliate, flag);
+    function setAffiliate(address[] memory accounts, bool flag) external {
+        require(msg.sender == factory || msg.sender == artist, "!AUTH");
+        for (uint256 i = 0; i < accounts.length; i++) {
+            affiliates[accounts[i]] = flag;
+        }
+        emit AffiliateSet(accounts, flag);
     }
 
     modifier OnlyFactory() {

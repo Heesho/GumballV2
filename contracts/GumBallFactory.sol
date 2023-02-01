@@ -37,6 +37,7 @@ interface IXGBTFactory {
 interface IGBT {
     function setXGBT(address _XGBT) external;
     function updateAllowlist(address[] memory accounts, uint256 amount) external;
+    function setAffiliate(address[] memory accounts, bool flag) external;
     function getFees() external view returns (address);
 }
 
@@ -161,20 +162,20 @@ contract GumBallFactory is Ownable {
     //////// GBT ////////
     /////////////////////
 
-    function updateGumBallAllowlist(address _tokenAddr, address[] calldata accounts, uint256 _amount) external onlyOwner {
-        IGBT(_tokenAddr).updateAllowlist(accounts, _amount);
+    function updateGumBallAllowlist(address _tokenAddr, address[] calldata _accounts, uint256 _amount) external onlyOwner {
+        IGBT(_tokenAddr).updateAllowlist(_accounts, _amount);
+    }
+
+    function updateGumBallAffiliate(address _tokenAdr, address[] calldata _accounts, bool _flag) external onlyOwner {
+        IGBT(_tokenAddr).setAffiliate(_accounts, _flag);
     }
 
     ////////////////////
     /////// XGBT ///////
     ////////////////////
 
-    function addReward(address _gumbarAddr, address _rewardsToken, address _rewardsDistributor) external onlyOwner {
-        IXGBT(_gumbarAddr).addReward(_rewardsToken, _rewardsDistributor);
-    }
-
-    function setRewardsDistributor(address _gumbarAddr, address _rewardsToken, address _rewardsDistributor) external onlyOwner {
-        IXGBT(_gumbarAddr).setRewardsDistributor(_rewardsToken, _rewardsDistributor);
+    function addReward(address _gumbarAddr, address _rewardsToken) external onlyOwner {
+        IXGBT(_gumbarAddr).addReward(_rewardsToken);
     }
 
 }

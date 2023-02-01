@@ -61,18 +61,12 @@ contract XGBT is ReentrancyGuard {
         stakingNFT = IERC721(_stakingNFT);
     }
 
-    function addReward(
-        address _rewardsToken,
-        address _rewardsDistributor
-    )
-        external OnlyFactory
-    {
+    function addReward(address _rewardsToken) external {
+        require(msg.sender == factory || msg.sender == artist, "!AUTH"); // need to pass in artist for this to work
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
         rewardTokens.push(_rewardsToken);
-        rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
         isRewardToken[_rewardsToken] = true;
-
-        emit RewardAdded(_rewardsToken, _rewardsDistributor);
+        emit RewardAdded(_rewardsToken);
     } 
 
     /* ========== VIEWS ========== */
@@ -201,7 +195,6 @@ contract XGBT is ReentrancyGuard {
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external updateReward(address(0)) {
-        require(rewardData[_rewardsToken].rewardsDistributor == msg.sender);
         require(reward > DURATION);
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
@@ -219,11 +212,6 @@ contract XGBT is ReentrancyGuard {
         rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
         rewardData[_rewardsToken].periodFinish = block.timestamp + DURATION;
         emit RewardNotified(reward);
-    }
-
-    function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor) external OnlyFactory {
-        rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
-        emit DistributorSet(_rewardsToken, _rewardsDistributor);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
