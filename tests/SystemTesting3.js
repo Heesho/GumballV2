@@ -511,7 +511,7 @@ describe("SystemTesting3", function () {
     it('User1 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await expect(GBTFees.connect(user2).distributeFees()).to.be.revertedWith('reward amount should be greater than leftover amount');
+        await GBTFees.connect(user2).distributeFees();
 
     });
 

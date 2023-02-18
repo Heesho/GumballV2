@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -11,6 +10,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface IGBT {
     function mustStayGBT(address account) external view returns (uint256);
+    function getArtist() external view returns (address);
 }
 
 contract XGBT is ReentrancyGuard {
@@ -55,14 +55,13 @@ contract XGBT is ReentrancyGuard {
         address _stakingToken,
         address _stakingNFT
     ) {
-        require(_factory != address(0), "!0");
         factory = _factory;
         stakingToken = IERC20(_stakingToken);
         stakingNFT = IERC721(_stakingNFT);
     }
 
     function addReward(address _rewardsToken) external {
-        require(msg.sender == factory || msg.sender == artist, "!AUTH"); // need to pass in artist for this to work
+        require(msg.sender == factory || msg.sender == IGBT(address(stakingToken)).getArtist(), "!AUTH");
         require(!isRewardToken[_rewardsToken], "Reward token already exists");
         rewardTokens.push(_rewardsToken);
         isRewardToken[_rewardsToken] = true;
@@ -195,7 +194,6 @@ contract XGBT is ReentrancyGuard {
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external updateReward(address(0)) {
-        require(reward > DURATION);
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
@@ -205,7 +203,6 @@ contract XGBT is ReentrancyGuard {
         } else {
             uint256 remaining = rewardData[_rewardsToken].periodFinish - block.timestamp;
             uint256 leftover = remaining * rewardData[_rewardsToken].rewardRate;
-            require(reward > leftover, "reward amount should be greater than leftover amount"); // to stop griefing attack
             rewardData[_rewardsToken].rewardRate = (reward + leftover) / DURATION;
         }
 
@@ -265,11 +262,6 @@ contract XGBT is ReentrancyGuard {
         _;
     }
 
-    modifier OnlyFactory() {
-        require(msg.sender == factory, "!AUTH");
-        _;
-    }
-
     /* ========== EVENTS ========== */
 
     event RewardNotified(uint256 reward);
@@ -278,8 +270,7 @@ contract XGBT is ReentrancyGuard {
     event DepositNFT(address indexed user, address colleciton, uint256[] id);
     event WithdrawNFT(address indexed user, address collection, uint256[] id);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
-    event RewardAdded(address reward, address distributor);
-    event DistributorSet(address reward, address distributor);
+    event RewardAdded(address reward);
 }
 
 contract XGBTFactory {

@@ -96,7 +96,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(ten, 1, 1782282187, AddressZero);
 
     });
 
@@ -104,7 +104,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187, user3.address);
+        await GBT.connect(user1).buy(ten, 1, 1782282187, user3.address);
 
     });
 
@@ -112,7 +112,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(ten, 1, 1782282187, AddressZero);
 
     });
 
@@ -120,7 +120,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).sell(ten, 1, 1682282187);
+        await GBT.connect(user1).sell(ten, 1, 1782282187);
 
     });
 
@@ -128,7 +128,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).sell(ten, 1, 1682282187);
+        await GBT.connect(user1).sell(ten, 1, 1782282187);
 
     });
 
@@ -136,7 +136,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, twenty);
-        await GBT.connect(user1).buy(twenty, 1, 1682282187, user2.address);
+        await GBT.connect(user1).buy(twenty, 1, 1782282187, user2.address);
 
     });
 
@@ -159,7 +159,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(ten, 1, 1782282187, AddressZero);
 
     });
 
@@ -167,7 +167,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187, user3.address);
+        await GBT.connect(user2).buy(ten, 1, 1782282187, user3.address);
 
     });
 
@@ -175,15 +175,15 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).sell(ten, 1, 1682282187);
+        await GBT.connect(user2).sell(ten, 1, 1782282187);
 
     });
 
     it('Artist sets user3 as eligible affiliate', async function () {
         console.log("******************************************************");
 
-        await expect(GBT.connect(user3).setAffiliate(user3.address, true)).to.be.reverted;
-        await GBT.connect(artist).setAffiliate(user3.address, true);
+        await expect(GBT.connect(user3).setAffiliate([user3.address], true)).to.be.reverted;
+        await GBT.connect(artist).setAffiliate([user3.address], true);
 
     });
 
@@ -191,7 +191,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, twenty);
-        await GBT.connect(user1).buy(twenty, 1, 1682282187, user2.address);
+        await GBT.connect(user1).buy(twenty, 1, 1782282187, user2.address);
 
     });
 
@@ -199,7 +199,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, twenty);
-        await GBT.connect(user1).buy(twenty, 1, 1682282187, user3.address);
+        await GBT.connect(user1).buy(twenty, 1, 1782282187, user3.address);
 
     });
 
@@ -207,7 +207,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(ten, 1, 1782282187, AddressZero);
 
     });
 
@@ -215,7 +215,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187, user3.address);
+        await GBT.connect(user2).buy(ten, 1, 1782282187, user3.address);
 
     });
 
@@ -223,7 +223,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187, user3.address);
+        await GBT.connect(user2).buy(ten, 1, 1782282187, user3.address);
 
     });
 
@@ -231,7 +231,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).sell(ten, 1, 1682282187);
+        await GBT.connect(user1).sell(ten, 1, 1782282187);
 
     });
 
@@ -239,15 +239,15 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).sell(ten, 1, 1682282187);
+        await GBT.connect(user2).sell(ten, 1, 1782282187);
 
     });
 
     it('Artist removes user3 as eligible affiliate', async function () {
         console.log("******************************************************");
 
-        await expect(GBT.connect(user3).setAffiliate(user3.address, false)).to.be.reverted;
-        await GBT.connect(artist).setAffiliate(user3.address, false);
+        await expect(GBT.connect(user3).setAffiliate([user3.address], false)).to.be.reverted;
+        await GBT.connect(artist).setAffiliate([user3.address], false);
 
     });
 
@@ -255,7 +255,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, twenty);
-        await GBT.connect(user1).buy(twenty, 1, 1682282187, user3.address);
+        await GBT.connect(user1).buy(twenty, 1, 1782282187, user3.address);
 
     });
 
@@ -263,7 +263,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).sell(ten, 1, 1682282187);
+        await GBT.connect(user1).sell(ten, 1, 1782282187);
 
     });
 
@@ -271,7 +271,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187, user3.address);
+        await GBT.connect(user2).buy(ten, 1, 1782282187, user3.address);
 
     });
 
@@ -279,7 +279,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
@@ -287,7 +287,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user2).approve(GBT.address, await GBT.balanceOf(user2.address));
-        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1782282187);
 
     });
 
@@ -317,7 +317,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
@@ -325,7 +325,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user3).approve(GBT.address, await GBT.balanceOf(user3.address));
-        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1782282187);
 
     });
 
@@ -339,8 +339,8 @@ describe("SystemTesting8", function () {
     it('Artist sets user3 as eligible affiliate', async function () {
         console.log("******************************************************");
 
-        await expect(GBT.connect(user3).setAffiliate(user3.address, true)).to.be.reverted;
-        await GBT.connect(artist).setAffiliate(user3.address, true);
+        await expect(GBT.connect(user3).setAffiliate([user3.address], true)).to.be.reverted;
+        await GBT.connect(artist).setAffiliate([user3.address], true);
 
     });
 
@@ -348,7 +348,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, ten);
-        await GBT.connect(user2).buy(ten, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(ten, 1, 1782282187, AddressZero);
 
     });
 
@@ -356,7 +356,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(ten, 1, 1782282187, AddressZero);
 
     });
 
@@ -364,7 +364,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
@@ -487,14 +487,14 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user2).approve(GBT.address, await GBT.balanceOf(user2.address));
-        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1782282187);
 
     });
 
     it('User1 Buys GBT with 100 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, oneHundred);
-        await GBT.connect(user1).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(oneHundred, 1, 1782282187, AddressZero);
     });
 
     it('User1 swaps for exact 3 NFT', async function () {
@@ -805,7 +805,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, oneHundred);
-        await GBT.connect(user2).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(oneHundred, 1, 1782282187, AddressZero);
 
     });
 
@@ -892,7 +892,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, oneHundred);
-        await GBT.connect(user2).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(oneHundred, 1, 1782282187, AddressZero);
 
     });
 
@@ -918,7 +918,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, oneHundred);
-        await GBT.connect(user2).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(oneHundred, 1, 1782282187, AddressZero);
 
     });
 
@@ -926,7 +926,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, oneHundred);
-        await GBT.connect(user2).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(oneHundred, 1, 1782282187, AddressZero);
 
     });
 
@@ -1020,7 +1020,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
@@ -1028,7 +1028,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user2).approve(GBT.address, await GBT.balanceOf(user2.address));
-        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1782282187);
 
     });
 
@@ -1036,7 +1036,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user3).approve(GBT.address, await GBT.balanceOf(user3.address));
-        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1782282187);
 
     });
 
@@ -1051,7 +1051,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(artist).approve(GBT.address, await GBT.balanceOf(artist.address));
-        await GBT.connect(artist).sell(await GBT.balanceOf(artist.address), 1, 1682282187);
+        await GBT.connect(artist).sell(await GBT.balanceOf(artist.address), 1, 1782282187);
 
     });
 
@@ -1066,7 +1066,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(protocol).approve(GBT.address, await GBT.balanceOf(protocol.address));
-        await GBT.connect(protocol).sell(await GBT.balanceOf(protocol.address), 1, 1682282187);
+        await GBT.connect(protocol).sell(await GBT.balanceOf(protocol.address), 1, 1782282187);
 
     });
 
@@ -1080,7 +1080,7 @@ describe("SystemTesting8", function () {
     it('Owner calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await expect(GBTFees.connect(owner).distributeFees()).to.be.reverted;
+        await GBTFees.connect(owner).distributeFees();
 
     });
 
@@ -1171,7 +1171,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
@@ -1179,7 +1179,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user2).approve(GBT.address, await GBT.balanceOf(user2.address));
-        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1782282187);
 
     });
 
@@ -1187,7 +1187,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user2).approve(GBT.address, oneHundred);
-        await GBT.connect(user2).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user2).buy(oneHundred, 1, 1782282187, AddressZero);
 
     });
 
@@ -1195,7 +1195,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, oneHundred);
-        await GBT.connect(user1).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(oneHundred, 1, 1782282187, AddressZero);
 
     });
 
@@ -1218,7 +1218,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
@@ -1324,7 +1324,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
@@ -1424,7 +1424,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user2).approve(GBT.address, await GBT.balanceOf(user2.address));
-        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1682282187);
+        await GBT.connect(user2).sell(await GBT.balanceOf(user2.address), 1, 1782282187);
 
     });
 
@@ -1432,7 +1432,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(protocol).approve(GBT.address, await GBT.balanceOf(protocol.address));
-        await GBT.connect(protocol).sell(await GBT.balanceOf(protocol.address), 1, 1682282187);
+        await GBT.connect(protocol).sell(await GBT.balanceOf(protocol.address), 1, 1782282187);
 
     });
 
@@ -1440,7 +1440,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(artist).approve(GBT.address, await GBT.balanceOf(artist.address));
-        await GBT.connect(artist).sell(await GBT.balanceOf(artist.address), 1, 1682282187);
+        await GBT.connect(artist).sell(await GBT.balanceOf(artist.address), 1, 1782282187);
 
     });
 
@@ -1448,7 +1448,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user3).approve(GBT.address, await GBT.balanceOf(user3.address));
-        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1682282187);
+        await GBT.connect(user3).sell(await GBT.balanceOf(user3.address), 1, 1782282187);
 
     });
 
@@ -1456,7 +1456,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, oneHundred);
-        await GBT.connect(user1).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(oneHundred, 1, 1782282187, AddressZero);
 
     });
 
@@ -1464,7 +1464,7 @@ describe("SystemTesting8", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 

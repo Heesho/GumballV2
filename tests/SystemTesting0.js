@@ -519,7 +519,7 @@ describe("SystemTesting0", function () {
     it('User1 calls treasury skim', async function () {
         console.log("******************************************************");
 
-        await expect(GBTFees.connect(user2).distributeFees()).to.be.revertedWith('reward amount should be greater than leftover amount');
+        await GBTFees.connect(user2).distributeFees();
 
     });
 
@@ -653,6 +653,19 @@ describe("SystemTesting0", function () {
         await GBT.floorPrice();
         await GBT.borrowCredit(user2.address);
 
+        await expect(GBT.connect(user1).borrowSome(0)).to.be.revertedWith("!Zero");
+        await expect(GBT.connect(user1).borrowSome(oneThousand)).to.be.revertedWith("Borrow Underflow");
+        await expect(GBT.connect(user1).repaySome(0)).to.be.revertedWith("!Zero");
+        await expect(GBT.connect(user1).updateAllowlist([user1.address], ten)).to.be.revertedWith("!AUTH");
+        await expect(GBT.connect(user1).setAffiliate([user1.address], true)).to.be.revertedWith("!AUTH");
+        await expect(GBT.connect(user1).setXGBT(user1.address)).to.be.reverted;
+
+        await expect(GBT.connect(user1).buy(ten, 1, 100, AddressZero)).to.be.revertedWith("Expired");
+        await expect(GBT.connect(user1).buy(0, 1, 0, AddressZero)).to.be.revertedWith("Amount cannot be zero");
+        await expect(GBT.connect(user1).buy(ten, oneHundred, 0, AddressZero)).to.be.revertedWith("Less than Min");
+        await expect(GBT.connect(user1).sell(ten, 1, 100)).to.be.revertedWith("Expired");
+        await expect(GBT.connect(user1).sell(0, 1, 0)).to.be.revertedWith("Amount cannot be zero");
+        await expect(GBT.connect(user1).sell(ten, oneHundred, 0)).to.be.revertedWith("Less than Min");
     });
 
     it('Artist sets new artist', async function () {
@@ -661,6 +674,7 @@ describe("SystemTesting0", function () {
         await expect(GBT.connect(owner).setArtist(owner.address)).to.be.revertedWith("!AUTH");
         await GBT.connect(artist).setArtist(owner.address);
         await GBT.connect(owner).setArtist(artist.address);
+
 
     });
 
@@ -707,14 +721,15 @@ describe("SystemTesting0", function () {
         await expect(factory.connect(user1).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], one)).to.be.reverted;
         await factory.connect(owner).updateGumBallAllowlist(GBT.address, [user1.address, user2.address], one);
 
-        await expect(factory.connect(user2).addReward(XGBT.address, USDC.address, user1.address)).to.be.reverted;
-        await factory.connect(owner).addReward(XGBT.address, USDC.address, owner.address);
-
-        await expect(factory.connect(user2).setRewardsDistributor(XGBT.address, USDC.address, user1.address)).to.be.reverted;
-        await factory.connect(owner).setRewardsDistributor(XGBT.address, USDC.address, user1.address);
-        await factory.connect(owner).setRewardsDistributor(XGBT.address, USDC.address, owner.address);
+        await expect(factory.connect(user2).addReward(XGBT.address, USDC.address)).to.be.reverted;
+        await expect(factory.connect(owner).addReward(XGBT.address, GBT.address)).to.be.revertedWith("Reward token already exists");
+        await factory.connect(owner).addReward(XGBT.address, USDC.address);
 
         await factory.totalDeployed();
+
+        await expect(gbtFactory.connect(user1).createGBT("test", "test", weth.address, oneHundred, oneHundred, user1.address, factory.address, 3600)).to.be.reverted;
+        await expect(xgbtFactory.connect(user1).createXGBT(user1.address, weth.address, GNFT.address)).to.be.reverted;
+        await expect(gnftFactory.connect(user1).createGNFT(user1.address, weth.address, GNFT.address)).to.be.reverted;
 
     });
 
