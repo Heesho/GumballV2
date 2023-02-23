@@ -227,7 +227,6 @@ contract GBT is ERC20, ReentrancyGuard {
       *     2. the whitelisted user cannont buy more than 1 GBT until the delay has elapsed
     */
     function buy(uint256 _amountBASE, uint256 _minGBT, uint256 expireTimestamp, address affiliate) external nonReentrant {
-        // require(start + delay <= block.timestamp || allowlist[msg.sender] >= 0, "Market Closed");
         require(expireTimestamp == 0 || expireTimestamp >= block.timestamp, "Expired");
         require(_amountBASE > 0, "Amount cannot be zero");
 

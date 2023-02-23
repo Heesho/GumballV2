@@ -21,7 +21,6 @@ contract XGBT is ReentrancyGuard {
     /* ========== STATE VARIABLES ========== */
 
     struct Reward {
-        address rewardsDistributor;
         uint256 periodFinish;
         uint256 rewardRate;
         uint256 lastUpdateTime;

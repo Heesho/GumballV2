@@ -93,7 +93,7 @@ describe("SystemTesting7", function () {
     it('User1 Buys GBT with 100 WETH', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, oneHundred);
-        await GBT.connect(user1).buy(oneHundred, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(oneHundred, 1, 1692282187, AddressZero);
     });
 
     it('User1 mints 20 NFT with GBT', async function () {
