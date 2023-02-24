@@ -17,7 +17,47 @@ interface IGBT {
     function getFees() external view returns (address);
 }
 
-contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
+contract ClampedRandomizer {
+    uint256 private _scopeIndex = 0; //Clamping cache for random TokenID generation in the anti-sniping algo
+    uint256 private immutable _scopeCap; //Size of initial randomized number pool & max generated value (zero indexed)
+    mapping(uint256 => uint256) _swappedIDs; //TokenID cache for random TokenID generation in the anti-sniping algo
+
+    constructor(uint256 scopeCap) {
+        _scopeCap = scopeCap;
+    }
+
+    function _genClampedNonce() internal virtual returns(uint256) {
+        uint256 scope = _scopeCap-_scopeIndex;
+        uint256 swap;
+        uint256 result;
+
+        uint256 i = randomNumber() % scope;
+
+        //Setup the value to swap in for the selected number
+        if (_swappedIDs[scope-1] == 0){
+            swap = scope-1;
+        } else {
+            swap = _swappedIDs[scope-1];
+        }
+
+        //Select a random number, swap it out with an unselected one then shorten the selection range by 1
+        if (_swappedIDs[i] == 0){
+            result = i;
+            _swappedIDs[i] = swap;
+        } else {
+            result = _swappedIDs[i];
+            _swappedIDs[i] = swap;
+        }
+        _scopeIndex++;
+        return result;
+    }
+
+    function randomNumber() internal view returns(uint256){
+        return uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp)));
+    }
+}
+
+contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard, ClampedRandomizer {
     using Counters for Counters.Counter;
     using SafeERC20 for IERC20;
 
@@ -52,14 +92,15 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
         string[] memory _URIs,
         address _GBT,
         uint256 _bFee
-        ) ERC721(name, symbol) {
-        require(_bFee <= 100, "Redemption fee too high");
-        baseTokenURI = _URIs[0];
-        _contractURI = _URIs[1];
-        GBT = _GBT;
-        bFee = _bFee;
-        fees = IGBT(GBT).getFees();
-        maxSupply = IGBT(GBT).initSupply() / 1e18;
+        ) ERC721(name, symbol) 
+        ClampedRandomizer(IGBT(_GBT).initSupply() / 1e18) {
+            require(_bFee <= 100, "Redemption fee too high");
+            baseTokenURI = _URIs[0];
+            _contractURI = _URIs[1];
+            GBT = _GBT;
+            bFee = _bFee;
+            fees = IGBT(GBT).getFees();
+            maxSupply = IGBT(GBT).initSupply() / 1e18;
     }
 
     ////////////////////
@@ -196,7 +237,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard {
       * @param to mints to address */
     function mint(address to) internal {
         require(_tokenIdCounter.current() < maxSupply, "Max Supply Minted");
-        _mint(to, _tokenIdCounter.current());
+        _mint(to, _genClampedNonce());
         _tokenIdCounter.increment();
     }
 
