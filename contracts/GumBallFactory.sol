@@ -58,7 +58,8 @@ contract GumBallFactory is Ownable {
         bool allowed;
     }
 
-    GumBall[] public gumballs;
+    GumBall[] public gumballs;          // index => GumBall
+    mapping(address=> uint256) indexes; // GBT => index
     mapping(address => bool) public allowlist;
 
     event TreasurySet(address _treasury);
@@ -121,10 +122,22 @@ contract GumBallFactory is Ownable {
             allow = false;
         }
 
+        uint256 index = gumballs.length;
+        indexes[gbt] = index;
+
         GumBall memory gumball = GumBall(gbt, gnft, xgbt, allow);
         gumballs.push(gumball);
 
         emit GumBallDeployed(gbt, gnft, xgbt);
+    }
+
+    function addExistingGumBall(address _gbt, address _xgbt, address _gnft) external onlyOwner {
+        uint256 index = gumballs.length;
+        indexes[_gbt] = index;
+        GumBall memory gumball = GumBall(_gbt, _gnft, _xgbt, true);
+        gumballs.push(gumball);
+
+        emit GumBallDeployed(_gbt, _gnft, _xgbt);
     }
 
     function setTreasury(address _treasury) external onlyOwner {
