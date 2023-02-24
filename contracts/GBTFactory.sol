@@ -105,7 +105,7 @@ contract GBT is ERC20, ReentrancyGuard {
     mapping(address => uint256) public borrowedBASE;
 
     // Fee
-    uint256 public constant PROTOCOL = 50;
+    uint256 public immutable fee;
     uint256 public constant AFFILIATE = 100;
     uint256 public constant DIVISOR = 1000;
 
@@ -127,9 +127,12 @@ contract GBT is ERC20, ReentrancyGuard {
         uint256 _supplyGBT,
         address _artist,
         address _factory,
-        uint256 _delay
+        uint256 _delay,
+        uint256 _fee
         ) ERC20(_name, _symbol) {
 
+        require(_fee <= 100, "Redemption fee too high");
+        require(_fee >= 25, "Redemption fee too low");
         BASE_TOKEN = _baseToken;
         artist = _artist;
         factory = _factory;
@@ -142,6 +145,8 @@ contract GBT is ERC20, ReentrancyGuard {
 
         start = block.timestamp;
         delay = _delay;
+        fee = _fee;
+
         fees = address(new GBTFees(address(this), BASE_TOKEN));
         _mint(address(this), _supplyGBT);
 
@@ -235,7 +240,7 @@ contract GBT is ERC20, ReentrancyGuard {
             referrals[account] = affiliate;
         } 
 
-        uint256 feeAmountBASE = _amountBASE * PROTOCOL / DIVISOR;
+        uint256 feeAmountBASE = _amountBASE * fee / DIVISOR;
 
         uint256 oldReserveBASE = reserveVirtualBASE + reserveRealBASE;
         uint256 newReserveBASE = oldReserveBASE + _amountBASE - feeAmountBASE;
@@ -279,7 +284,7 @@ contract GBT is ERC20, ReentrancyGuard {
 
         address account = msg.sender;
 
-        uint256 feeAmountGBT = _amountGBT * PROTOCOL / DIVISOR;
+        uint256 feeAmountGBT = _amountGBT * fee / DIVISOR;
 
         uint256 oldReserveGBT = reserveGBT;
         uint256 newReserveGBT = reserveGBT + _amountGBT - feeAmountGBT;
@@ -434,9 +439,10 @@ contract GBTFactory {
         uint256 _supplyGBT,
         address _artist,
         address _factory,
-        uint256 _delay
+        uint256 _delay,
+        uint256 _fee
     ) external OnlyFactory returns (address) {
-        GBT newGBT = new GBT(_name, _symbol, _baseToken, _initialVirtualBASE, _supplyGBT, _artist, _factory, _delay);
+        GBT newGBT = new GBT(_name, _symbol, _baseToken, _initialVirtualBASE, _supplyGBT, _artist, _factory, _delay, _fee);
         lastGBT = address(newGBT);
         return lastGBT;
     }

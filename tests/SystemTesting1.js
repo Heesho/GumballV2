@@ -78,7 +78,7 @@ describe("SystemTesting1", function () {
         await gnftFactory.connect(owner).setFactory(factory.address);
         await xgbtFactory.connect(owner).setFactory(factory.address);
 
-        await factory.deployGumBall('GBT', 'GBT', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 24*60*60, 0);
+        await factory.deployGumBall('GBT', 'GBT', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 24*60*60, [25, 80]);
         let GumBallData = await factory.deployInfo(0);
         GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
@@ -187,7 +187,9 @@ describe("SystemTesting1", function () {
     it('User1 deploys gumball', async function () {
         console.log("******************************************************");
 
-        await factory.connect(user1).deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneThousand, oneHundred, weth.address, user1.address, 0, 100);
+        await expect(factory.connect(user1).deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneThousand, oneHundred, weth.address, user1.address, 0, [0, 50])).to.be.revertedWith("Redemption fee too low");
+        await expect(factory.connect(user1).deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneThousand, oneHundred, weth.address, user1.address, 0, [200, 50])).to.be.revertedWith("Redemption fee too high");
+        await factory.connect(user1).deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneThousand, oneHundred, weth.address, user1.address, 0, [30, 0]);
         let GumBallData = await factory.deployInfo(1);
         GBT1 = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT1 = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);

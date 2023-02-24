@@ -12,7 +12,8 @@ interface IGBTFactory {
         uint256 _supplyGBT,
         address _artist,
         address _factory,
-        uint256 _delay
+        uint256 _delay,
+        uint256 _fee
     ) external returns (address);
 }
 
@@ -38,7 +39,6 @@ interface IGBT {
     function setXGBT(address _XGBT) external;
     function updateAllowlist(address[] memory accounts, uint256 amount) external;
     function setAffiliate(address[] memory accounts, bool flag) external;
-    function getFees() external view returns (address);
 }
 
 interface IXGBT {
@@ -98,7 +98,7 @@ contract GumBallFactory is Ownable {
         address _base,
         address _artist,
         uint256 _delay,
-        uint256 _bFee
+        uint256[] memory _fees
     ) external {
         require(bytes(_name).length != 0 && bytes(_symbol).length != 0 && bytes(_URIs[0]).length != 0 && bytes(_URIs[1]).length != 0, "Incomplete name, symbol or URI");
         require(_URIs.length == 2 && _supplyGBT >= 1 && _supplyBASE >=1, "Invalid URI length, supply or virtual base");
@@ -107,8 +107,8 @@ contract GumBallFactory is Ownable {
         string memory nameGNFT = string(abi.encodePacked(_name));
         string memory symbolGNFT = string(abi.encodePacked(_symbol));
 
-        address gbt = IGBTFactory(GBTFactory).createGBT(nameGNFT, symbolGNFT, _base, _supplyBASE, _supplyGBT, _artist, address(this), _delay);
-        address gnft = IGNFTFactory(GNFTFactory).createGNFT(nameGNFT, symbolGNFT, _URIs, gbt, _bFee);
+        address gbt = IGBTFactory(GBTFactory).createGBT(nameGNFT, symbolGNFT, _base, _supplyBASE, _supplyGBT, _artist, address(this), _delay, _fees[0]);
+        address gnft = IGNFTFactory(GNFTFactory).createGNFT(nameGNFT, symbolGNFT, _URIs, gbt, _fees[1]);
         address xgbt = IXGBTFactory(XGBTFactory).createXGBT(address(this), gbt, gnft);
         
         IGBT(gbt).setXGBT(xgbt);

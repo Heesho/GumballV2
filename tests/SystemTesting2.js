@@ -77,7 +77,7 @@ describe("SystemTesting2", function () {
         await gnftFactory.connect(owner).setFactory(factory.address);
         await xgbtFactory.connect(owner).setFactory(factory.address);
 
-        await factory.deployGumBall('GBT', 'GBT', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 24*60*60, 100);
+        await factory.deployGumBall('GBT', 'GBT', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 24*60*60, [100, 100]);
         let GumBallData = await factory.deployInfo(0);
         GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
