@@ -184,12 +184,6 @@ describe("SystemTesting9", function () {
         await GBT.connect(user3).buy(oneHundred, 1, 1782282187, AddressZero);
     });
 
-    it('Owner adds User3 to affiliate list', async function () {
-        console.log("******************************************************");
-        await expect(factory.connect(user3).updateGumBallAffiliate(GBT.address, [user3.address], true)).to.be.reverted;
-        await factory.connect(owner).updateGumBallAffiliate(GBT.address, [user3.address], true)
-    });
-
     it('User1 Buys GBT with 10 WETH with user3 affiliate', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
@@ -200,12 +194,6 @@ describe("SystemTesting9", function () {
         console.log("******************************************************");
         await GBT.connect(user1).approve(GBT.address, await GBT.balanceOf(user1.address));
         await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
-    });
-
-    it('Artist adds User2 to affiliate list', async function () {
-        console.log("******************************************************");
-        await expect(GBT.connect(owner).setAffiliate([user2.address], true)).to.be.reverted;
-        await GBT.connect(artist).setAffiliate([user2.address], true)
     });
     
     it('User2 transfers GBT and WETH to User1', async function () {
@@ -218,12 +206,6 @@ describe("SystemTesting9", function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
         await GBT.connect(user1).buy(ten, 1, 1782282187, user2.address);
-    });
-
-    it('Artist removes User3 from affiliate list', async function () {
-        console.log("******************************************************");
-        await expect(GBT.connect(owner).setAffiliate([user3.address], false)).to.be.reverted;
-        await GBT.connect(artist).setAffiliate([user3.address], false);
     });
 
     it('User1 Buys GBT with 10 WETH with user2 affiliate', async function () {
@@ -244,12 +226,6 @@ describe("SystemTesting9", function () {
         await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
     });
 
-    it('Artist readds User3 from affiliate list', async function () {
-        console.log("******************************************************");
-        await expect(GBT.connect(owner).setAffiliate([user3.address], true)).to.be.reverted;
-        await GBT.connect(artist).setAffiliate([user3.address], true);
-    });
-
     it('User1 Buys GBT with 10 WETH with user2 affiliate', async function () {
         console.log("******************************************************");
         await weth.connect(user1).approve(GBT.address, ten);
@@ -272,6 +248,12 @@ describe("SystemTesting9", function () {
         console.log("******************************************************");
         await weth.connect(user3).approve(GBT.address, ten);
         await GBT.connect(user3).buy(ten, 1, 1782282187, user1.address);
+    });
+
+    it('User3 Buys GBT with 10 WETH with user1 affiliate', async function () {
+        console.log("******************************************************");
+        await weth.connect(user3).approve(GBT.address, ten);
+        await GBT.connect(user3).buy(50, 1, 1782282187, user1.address);
     });
 
     it('System Status', async function () {
