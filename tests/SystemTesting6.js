@@ -77,7 +77,7 @@ describe("SystemTesting6", function () {
         await gnftFactory.connect(owner).setFactory(factory.address);
         await xgbtFactory.connect(owner).setFactory(factory.address);
 
-        await factory.deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 0, 100);
+        await factory.deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 0, [25, 100]);
         let GumBallData = await factory.deployInfo(0);
         GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
@@ -180,8 +180,9 @@ describe("SystemTesting6", function () {
 
     it('User2 swaps GBT for NFT in GumBall machine', async function () {
         console.log("******************************************************");
+
         await GBT.connect(user2).approve(GNFT.address, one);
-        await GNFT.connect(user2).swapForExact([0]);
+        await GNFT.connect(user2).swapForExact([await GNFT.gumballs(0)]);
     });
 
     it('User2 sets approval for all to market ', async function () {
@@ -191,7 +192,8 @@ describe("SystemTesting6", function () {
 
     it('User2 transfers nft to market', async function () {
         console.log("******************************************************");
-        await market.connect(user2).grabNFT(GNFT.address, 0);
+        let tokenID = await GNFT.tokenOfOwnerByIndex(user2.address, 0);
+        await market.connect(user2).grabNFT(GNFT.address, tokenID);
     });
 
     it('System Status', async function () {

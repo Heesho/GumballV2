@@ -77,7 +77,7 @@ describe("SystemTesting3", function () {
         await gnftFactory.connect(owner).setFactory(factory.address);
         await xgbtFactory.connect(owner).setFactory(factory.address);
 
-        await factory.deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 0, 100);
+        await factory.deployGumBall('GBT1', 'GBT1', ['testuri', 'testURI'], oneHundred, oneHundred, weth.address, artist.address, 0, [69, 100]);
         let GumBallData = await factory.deployInfo(0);
         GBT = await ethers.getContractAt("contracts/GBTFactory.sol:GBT", GumBallData[0]);
         GNFT = await ethers.getContractAt("contracts/GNFTFactory.sol:GNFT", GumBallData[1]);
@@ -179,8 +179,9 @@ describe("SystemTesting3", function () {
     it('User1 unstakes NFT', async function () {
         console.log("******************************************************");
 
-        await XGBT.connect(user1).withdrawNFT([0]);
-
+        let res = await XGBT.balanceOfNFT(user1.address);
+        console.log(res);
+        await XGBT.connect(user1).withdrawNFT([res.arr[0]]);
     });
 
     it('User1 converts NFT to GBT', async function () {
@@ -188,7 +189,7 @@ describe("SystemTesting3", function () {
 
         let tokenID = await GNFT.tokenOfOwnerByIndex(user1.address, 0);
         await GNFT.connect(user1).approve(GNFT.address, tokenID);
-        await GNFT.connect(user1).redeem([0]);
+        await GNFT.connect(user1).redeem([tokenID]);
 
     });
 
@@ -201,9 +202,9 @@ describe("SystemTesting3", function () {
 
     it('User2 withdraws NFT', async function () {
         console.log("******************************************************");
-
+        let res = await XGBT.balanceOfNFT(user2.address);
         await expect(XGBT.connect(user2).withdrawToken(await XGBT.balanceOf(user2.address))).to.be.revertedWith("Insufficient balance");
-        await expect(XGBT.connect(user2).withdrawNFT([1])).to.be.revertedWith("Borrow debt");
+        await expect(XGBT.connect(user2).withdrawNFT([res.arr[0]])).to.be.revertedWith("Borrow debt");
 
     });
 
@@ -226,7 +227,9 @@ describe("SystemTesting3", function () {
     it('User2 unstakes NFT', async function () {
         console.log("******************************************************");
 
-        await XGBT.connect(user2).withdrawNFT([1]);
+        let res = await XGBT.balanceOfNFT(user2.address);
+        console.log(res);
+        await XGBT.connect(user2).withdrawNFT([res.arr[0]]);
 
     });
 
