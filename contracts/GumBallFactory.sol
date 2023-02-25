@@ -134,6 +134,7 @@ contract GumBallFactory is Ownable {
     function addExistingGumBall(address _gbt, address _xgbt, address _gnft) external onlyOwner {
         uint256 index = gumballs.length;
         indexes[_gbt] = index;
+        
         GumBall memory gumball = GumBall(_gbt, _gnft, _xgbt, true);
         gumballs.push(gumball);
 
