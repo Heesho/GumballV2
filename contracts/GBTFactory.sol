@@ -18,7 +18,7 @@ interface IXGBT {
 interface IGBT {
     function getXGBT() external view returns (address);
     function getFactory() external view returns (address);
-    function getArtist() external view returns (address);
+    function artistTreasury() external view returns (address);
 }
 
 contract GBTFees {
@@ -51,7 +51,7 @@ contract GBTFees {
         balanceBASE -= reward;
 
         address treasury = IGumBallFactory(IGBT(_GBT).getFactory()).getTreasury();
-        address artist = IGBT(_GBT).getArtist();
+        address artist = IGBT(_GBT).artistTreasury();
         address _xgbt = IGBT(_GBT).getXGBT();
 
         // Distribute GBT
@@ -88,6 +88,7 @@ contract GBT is ERC20, ReentrancyGuard {
     // Addresses
     address public XGBT;
     address public artist;
+    address public artistTreasury;
     address public immutable fees; // Fee Contract
     address public immutable factory;
 
@@ -117,6 +118,7 @@ contract GBT is ERC20, ReentrancyGuard {
     event AllowListUpdated(address[] accounts, uint256 amount);
     event XGBTSet(address indexed _XGBT);
     event ChangeArtist(address newArtist);
+    event ChangeArtistTreasury(address newArtistTreasury);
     event AffiliateSet(address[] indexed affiliate, bool flag);
 
     constructor(
@@ -135,6 +137,7 @@ contract GBT is ERC20, ReentrancyGuard {
         require(_fee >= 25, "Redemption fee too low");
         BASE_TOKEN = _baseToken;
         artist = _artist;
+        artistTreasury = _artist;
         factory = _factory;
 
         reserveVirtualBASE = _initialVirtualBASE;
@@ -400,6 +403,12 @@ contract GBT is ERC20, ReentrancyGuard {
         require(msg.sender == artist, "!AUTH");
         artist = _artist;
         emit ChangeArtist(_artist);
+    }
+
+    function setArtistTreasury(address _artistTreasury) external {
+        require(msg.sender == artist, "!AUTH");
+        artistTreasury = _artistTreasury;
+        emit ChangeArtistTreasury(_artistTreasury);
     }
 
     function setAffiliate(address[] memory accounts, bool flag) external {
