@@ -93,7 +93,6 @@ contract GBT is ERC20, ReentrancyGuard {
     address public immutable factory;
 
     // Affiliates
-    mapping(address => bool) public affiliates; // affiliate => bool
     mapping(address => address) public referrals; // account => affiliate
 
     // Allowlist Variables
@@ -239,7 +238,7 @@ contract GBT is ERC20, ReentrancyGuard {
         require(_amountBASE > 0, "Amount cannot be zero");
 
         address account = msg.sender;
-        if (referrals[account] == address(0) && affiliate != address(0) && affiliates[affiliate]) {
+        if (referrals[account] == address(0) && affiliate != address(0)) {
             referrals[account] = affiliate;
         } 
 
@@ -263,7 +262,7 @@ contract GBT is ERC20, ReentrancyGuard {
         reserveRealBASE = newReserveBASE - reserveVirtualBASE;
         reserveGBT = newReserveGBT;
 
-        if (referrals[account] == address(0) || !affiliates[referrals[account]]) {
+        if (referrals[account] == address(0)) {
             IERC20(BASE_TOKEN).safeTransferFrom(account, fees, feeAmountBASE);
         } else {
             IERC20(BASE_TOKEN).safeTransferFrom(account, referrals[account], feeAmountBASE * AFFILIATE / DIVISOR);
@@ -302,7 +301,7 @@ contract GBT is ERC20, ReentrancyGuard {
         reserveRealBASE = newReserveBASE - reserveVirtualBASE;
         reserveGBT = newReserveGBT;
 
-        if (referrals[account] == address(0) || !affiliates[referrals[account]]) {
+        if (referrals[account] == address(0)) {
             IERC20(address(this)).safeTransferFrom(account, fees, feeAmountGBT);
         } else {
             IERC20(address(this)).safeTransferFrom(account, referrals[account], feeAmountGBT * AFFILIATE / DIVISOR);
@@ -409,14 +408,6 @@ contract GBT is ERC20, ReentrancyGuard {
         require(msg.sender == artist, "!AUTH");
         artistTreasury = _artistTreasury;
         emit ChangeArtistTreasury(_artistTreasury);
-    }
-
-    function setAffiliate(address[] memory accounts, bool flag) external {
-        require(msg.sender == factory || msg.sender == artist, "!AUTH");
-        for (uint256 i = 0; i < accounts.length; i++) {
-            affiliates[accounts[i]] = flag;
-        }
-        emit AffiliateSet(accounts, flag);
     }
 
     modifier OnlyFactory() {

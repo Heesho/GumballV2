@@ -661,7 +661,6 @@ describe("SystemTesting0", function () {
         await expect(GBT.connect(user1).borrowSome(oneThousand)).to.be.revertedWith("Borrow Underflow");
         await expect(GBT.connect(user1).repaySome(0)).to.be.revertedWith("!Zero");
         await expect(GBT.connect(user1).updateAllowlist([user1.address], ten)).to.be.revertedWith("!AUTH");
-        await expect(GBT.connect(user1).setAffiliate([user1.address], true)).to.be.revertedWith("!AUTH");
         await expect(GBT.connect(user1).setXGBT(user1.address)).to.be.reverted;
 
         await expect(GBT.connect(user1).buy(ten, 1, 100, AddressZero)).to.be.revertedWith("Expired");

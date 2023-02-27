@@ -38,7 +38,6 @@ interface IXGBTFactory {
 interface IGBT {
     function setXGBT(address _XGBT) external;
     function updateAllowlist(address[] memory accounts, uint256 amount) external;
-    function setAffiliate(address[] memory accounts, bool flag) external;
 }
 
 interface IXGBT {
@@ -58,17 +57,18 @@ contract GumBallFactory is Ownable {
         bool allowed;
     }
 
-    GumBall[] public gumballs;          // index => GumBall
-    mapping(address=> uint256) indexes; // GBT => index
+    GumBall[] public gumballs;
+    mapping(address => uint256) public indexes; // GBT => index
     mapping(address => bool) public allowlist;
 
     event TreasurySet(address _treasury);
-    event GumBallDeployed(address gbt, address gnft, address xgbt);
+    event GumBallDeployed(address indexed gbt, address indexed gnft, address indexed xgbt);
     event GBTFactorySet(address gbtFactory);
     event GNFTFactorySet(address gnftFactory);
     event XGBTFactorySet(address xgbtFactory);
     event AllowExisting(uint256 index, bool _bool);
     event FactoryAllowlistUpdate(address _factory, bool flag);
+    event GumBallAdded(address indexed _gbt, address indexed _gnft, address indexed _xgbt);
 
     constructor(address _GBTFactory, address _GNFTFactory, address _XGBTFactory, address _treasury) {
         GBTFactory = _GBTFactory;
@@ -134,6 +134,7 @@ contract GumBallFactory is Ownable {
     function addExistingGumBall(address _gbt, address _xgbt, address _gnft) external onlyOwner {
         uint256 index = gumballs.length;
         indexes[_gbt] = index;
+        
         GumBall memory gumball = GumBall(_gbt, _gnft, _xgbt, true);
         gumballs.push(gumball);
 
@@ -176,10 +177,6 @@ contract GumBallFactory is Ownable {
 
     function updateGumBallAllowlist(address _tokenAddr, address[] calldata _accounts, uint256 _amount) external onlyOwner {
         IGBT(_tokenAddr).updateAllowlist(_accounts, _amount);
-    }
-
-    function updateGumBallAffiliate(address _tokenAddr, address[] calldata _accounts, bool _flag) external onlyOwner {
-        IGBT(_tokenAddr).setAffiliate(_accounts, _flag);
     }
 
     ////////////////////
