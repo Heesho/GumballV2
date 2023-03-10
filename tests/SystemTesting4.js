@@ -92,7 +92,7 @@ describe("SystemTesting4", function () {
         console.log("******************************************************");
 
         await weth.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).buy(ten, 1, 1682282187, AddressZero);
+        await GBT.connect(user1).buy(ten, 1, 1782282187, AddressZero);
 
     });
 
@@ -108,7 +108,7 @@ describe("SystemTesting4", function () {
         console.log("******************************************************");
 
         await GBT.connect(user1).approve(GBT.address, ten);
-        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1682282187);
+        await GBT.connect(user1).sell(await GBT.balanceOf(user1.address), 1, 1782282187);
 
     });
 
