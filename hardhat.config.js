@@ -19,10 +19,12 @@ module.exports = {
     },
   },
   networks: {
-    localhost: {
-      url: "http://127.0.0.1:8545"
-    },
-    hardhat: {      
+    hardhat: {    
+      chainId: 42161,
+      forking: {
+        url: 'https://arb-mainnet.g.alchemy.com/v2/rb1F4XDQBoyhozMVO3U3n_LyHBbwA1tu',
+        blockNumber: 68640000,
+      }
     },
   },
   paths: {

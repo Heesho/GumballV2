@@ -2,47 +2,11 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-interface IGBTFactory {
-    function createGBT(
-        string memory _name,
-        string memory _symbol,
-        address _baseToken,
-        uint256 _initialVirtualBASE,
-        uint256 _supplyGBT,
-        address _artist,
-        address _factory,
-        uint256 _delay,
-        uint256 _fee
-    ) external returns (address);
-}
-
-interface IGNFTFactory {
-    function createGNFT(
-        string memory _name,
-        string memory _symbol,
-        string[] memory _URIs,
-        address _GBT,
-        uint256 _bFee
-    ) external returns (address);
-}
-
-interface IXGBTFactory {
-    function createXGBT(
-        address _owner,
-        address _stakingToken,
-        address _stakingNFT
-    ) external returns (address);
-}
-
-interface IGBT {
-    function setXGBT(address _XGBT) external;
-    function updateAllowlist(address[] memory accounts, uint256 amount) external;
-}
-
-interface IXGBT {
-    function addReward(address _rewardsToken) external;
-}
+import 'contracts/interfaces/IGBTFactory.sol';
+import 'contracts/interfaces/IGNFTFactory.sol';
+import 'contracts/interfaces/IXGBTFactory.sol';
+import 'contracts/interfaces/IGBT.sol';
+import 'contracts/interfaces/IXGBT.sol';
 
 contract GumBallFactory is Ownable {
     address public GBTFactory;

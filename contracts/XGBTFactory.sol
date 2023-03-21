@@ -7,11 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-
-interface IGBT {
-    function mustStayGBT(address account) external view returns (uint256);
-    function getArtist() external view returns (address);
-}
+import 'contracts/interfaces/IGBT.sol';
 
 contract XGBT is ReentrancyGuard {
     using SafeERC20 for IERC20;

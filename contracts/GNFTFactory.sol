@@ -8,14 +8,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "operator-filter-registry/src/DefaultOperatorFilterer.sol";
-
-interface IGBT {
-    function currentPrice() external view returns (uint256);
-    function getProtocol() external view returns (address);
-    function initSupply() external view returns (uint256);
-    function artist() external view returns (address);
-    function getFees() external view returns (address);
-}
+import 'contracts/interfaces/IGBT.sol';
 
 contract ClampedRandomizer {
     uint256 private _scopeIndex = 0; //Clamping cache for random TokenID generation in the anti-sniping algo
@@ -112,7 +105,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard, Cla
     }
 
     function owner() external view returns (address) {	
-        return IGBT(GBT).artist();	
+        return IGBT(GBT).getArtist();	
     }
 
     /** Returns bal of {GBT} */
@@ -298,7 +291,7 @@ contract GNFT is ERC721Enumerable, DefaultOperatorFilterer, ReentrancyGuard, Cla
     }
 
     modifier OnlyArtist() {
-        require(msg.sender == IGBT(GBT).artist(), "!AUTH");
+        require(msg.sender == IGBT(GBT).getArtist(), "!AUTH");
         _;
     }
 }

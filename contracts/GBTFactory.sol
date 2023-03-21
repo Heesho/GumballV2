@@ -5,21 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-interface IGumBallFactory {
-    function getTreasury() external view returns (address);
-}
-
-interface IXGBT {
-    function balanceOf(address account) external view returns (uint256);
-    function notifyRewardAmount(address _rewardsToken, uint256 reward) external; 
-}
-
-interface IGBT {
-    function getXGBT() external view returns (address);
-    function getFactory() external view returns (address);
-    function artistTreasury() external view returns (address);
-}
+import 'contracts/interfaces/IGumBallFactory.sol';
+import 'contracts/interfaces/IXGBT.sol';
+import 'contracts/interfaces/IGBT.sol';
 
 contract GBTFees {
     using SafeERC20 for IERC20;
